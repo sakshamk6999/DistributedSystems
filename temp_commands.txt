@@ -1,0 +1,36 @@
+REGISTER --username test_user_2 --password test_user_2 --name test
+LOGIN --username test_user_2 --password test_user_2
+
+DISPLAY_CART
+
+PRODUCT_SEARCH --category 1 --keywords cycle
+
+ADD_ITEM --item_id 1 --item_quantity 2
+
+DISPLAY_CART
+
+REMOVE_ITEM --item_id 1
+
+DISPLAY_CART
+
+ADD_ITEM --item_id 1 --item_quantity 2
+
+SAVE_CART
+
+
+
+GET_BUYER_PURCHASES
+
+GET_SELLER_RATING --seller_id 1
+
+
+
+REGISTER --username test_user_2 --password test_user_2 --name test
+
+LOGIN --username test_user_2 --password test_user_2
+
+DISPLAY_ITEMS_FOR_SALE
+
+REGISTER_PRODUCT --name car --category 2 --condition 0 --sale_price 4000 --quantity 2
+
+CHANGE_ITEM_PRICE --item_id 2 --sale_price 4550

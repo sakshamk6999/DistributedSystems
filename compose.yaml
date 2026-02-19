@@ -1,0 +1,35 @@
+services:
+  # =============================================================================
+  # Customer Database Service
+  # =============================================================================
+  customerdb:
+    build:
+      context: ./DB/customer
+      dockerfile: Dockerfile
+    container_name: customerdb
+    restart: unless-stopped
+    ports:
+      - "8000:3306"
+    networks:
+      - marketplace_network
+
+  # =============================================================================
+  # Product Database Service
+  # =============================================================================
+  productdb:
+    build:
+      context: ./DB/product
+      dockerfile: Dockerfile
+    container_name: productdb
+    restart: unless-stopped
+    ports:
+      - "8001:3306"
+    networks:
+      - marketplace_network
+
+# =============================================================================
+# Networks
+# =============================================================================
+networks:
+  marketplace_network:
+    driver: bridge
