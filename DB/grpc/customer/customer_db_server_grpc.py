@@ -7,6 +7,7 @@ import os
 import json
 import logging
 import pymysql
+import sqlalchemy
 
 CUSTOMER_DB_CONFIG = {
     "host": os.getenv("CUSTOMER_DB_HOST", "136.116.96.33"),
@@ -18,7 +19,7 @@ CUSTOMER_DB_CONFIG = {
 }
 
 connector = Connector()
-INSTANCE_CONNECTION_NAME = "distributedsystemsassignments:us-central1-c:customer-db-1"
+INSTANCE_CONNECTION_NAME = "distributedsystemsassi:us-central1-c:customer-db-1"
 
 def getconn():
     conn = connector.connect(
@@ -37,16 +38,21 @@ def create_customer_db_connection():
         # # print(f"Successfully connected to the customer db")
         # return connection
         return getconn()
-    except pymysql.Error as err:
-        print(f"Error connecting to MySQL: {err}")
+    except Exception as e:
+        print(f"Error connecting to MySQL: {str(e)}")
         return None
 
+pool = sqlalchemy.create_engine(
+    "mysql+pymysql://",
+    creator=getconn,
+)
+
 def setup_databses():
-    conn = create_customer_db_connection()
-    with conn.cursor() as cursor:
+    # conn = create_customer_db_connection()
+    with pool.connect() as db_conn:
         print("creating sellers table")
 
-        cursor.execute(f'''
+        db_conn.execute(sqlalchemy.text('''
 CREATE TABLE IF NOT EXISTS sellers (
     id INT AUTO_INCREMENT PRIMARY KEY,
     username VARCHAR(32) NOT NULL UNIQUE,
@@ -56,8 +62,8 @@ CREATE TABLE IF NOT EXISTS sellers (
     thumbs_down INT DEFAULT 0,
     items_sold INT DEFAULT 0
 );
-''')
-        conn.commit()
+'''))
+        db_conn.commit()
 
         print("created sellers")
 
