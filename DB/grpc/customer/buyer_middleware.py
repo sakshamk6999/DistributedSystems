@@ -1,5 +1,6 @@
-import asyncio
+import os
 import grpc
+import logging
 import customer_db_pb2
 import customer_db_pb2_grpc
 from quart import Quart, request, jsonify
@@ -7,143 +8,116 @@ from google.protobuf.json_format import MessageToDict
 
 app = Quart(__name__)
 
-# --- Global gRPC Async State ---
-# We use a global variable to store the async channel and stub
-grpc_state = {
-    "channel": None,
-    "stub": None
-}
+# --- Configuration ---
+# Use the Internal IP of your Server VM here
+GRPC_SERVER_ADDR = os.getenv("GRPC_SERVER_ADDR", "localhost:50051")
+
+class GRPCManager:
+    def __init__(self):
+        self.channel = None
+        self.stub = None
+
+    async def init(self):
+        # We use a single persistent channel for all requests
+        self.channel = grpc.aio.insecure_channel(GRPC_SERVER_ADDR)
+        self.stub = customer_db_pb2_grpc.CustomerDBStub(self.channel)
+        print(f"Connected to gRPC server at {GRPC_SERVER_ADDR}")
+
+    async def close(self):
+        if self.channel:
+            await self.channel.close()
+
+grpc_manager = GRPCManager()
 
 @app.before_serving
 async def startup():
-    """Initialize the async gRPC channel when the server starts."""
-    grpc_state["channel"] = grpc.aio.insecure_channel("localhost:50051")
-    grpc_state["stub"] = customer_db_pb2_grpc.CustomerDBStub(grpc_state["channel"])
-    print("Async gRPC channel opened.")
+    await grpc_manager.init()
 
 @app.after_serving
 async def shutdown():
-    """Clean up the channel when the server stops."""
-    await grpc_state["channel"].close()
-    print("Async gRPC channel closed.")
+    await grpc_manager.close()
 
+# --- Helpers ---
 def proto_to_dict(response):
-    return MessageToDict(response, preserving_proto_field_name=True)
+    """Converts Protobuf message to JSON-friendly dict."""
+    return MessageToDict(response, 
+                         preserving_proto_field_name=True, 
+                         including_default_value_fields=True)
 
-# --- Async Routes ---
+async def handle_grpc_call(rpc_method, proto_request):
+    """Generic wrapper to handle gRPC errors gracefully."""
+    try:
+        response = await rpc_method(proto_request)
+        return jsonify(proto_to_dict(response))
+    except grpc.RpcError as e:
+        status_code = 500
+        # Map gRPC Unauthenticated to HTTP 401
+        if e.code() == grpc.StatusCode.UNAUTHENTICATED:
+            status_code = 401
+        return jsonify({"error": str(e.code()), "details": e.details()}), status_code
+
+# --- Routes ---
+
 @app.route('/register', methods=['POST'])
 async def register():
-    # request.get_json() is a coroutine in Quart
     data = await request.get_json()
-    print("data is", data)
-    # We await the gRPC call so the event loop can handle other requests while waiting for the DB
-    try:
-        response = await grpc_state["stub"].Register(customer_db_pb2.RegisterRequest(
+    return await handle_grpc_call(
+        grpc_manager.stub.Register,
+        customer_db_pb2.RegisterRequest(
             username=data.get("username"),
             password=data.get("password"),
             name=data.get("name")
-        ))
+        )
+    )
 
-        print("Response is", response)
-        # print("Response", response.se)
-        return jsonify(proto_to_dict(response))
-    except grpc.RpcError as e:
-        return jsonify({"error": str(e.code()), "details": e.details()}), 500
-
-# --- Async Routes ---
 @app.route('/login', methods=['POST'])
 async def login():
-    # request.get_json() is a coroutine in Quart
     data = await request.get_json()
-    print("data is", data)
-    # We await the gRPC call so the event loop can handle other requests while waiting for the DB
-    try:
-        response = await grpc_state["stub"].Login(customer_db_pb2.LoginRequest(
+    return await handle_grpc_call(
+        grpc_manager.stub.Login,
+        customer_db_pb2.LoginRequest(
             username=data.get("username"),
             password=data.get("password")
-        ))
-
-        print("Response is", response)
-        # print("Response", response.se)
-        return jsonify(proto_to_dict(response))
-    except grpc.RpcError as e:
-        return jsonify({"error": str(e.code()), "details": e.details()}), 500
+        )
+    )
 
 @app.route('/products/search', methods=['GET'])
 async def product_search():
-    print("request args", request.args)
+    # Extract params from Query String
     category = request.args.get("category")
     keywords = request.args.getlist("keywords")
+    # Usually better to pass session_id in Headers for GET requests
     session_id = request.headers.get("Authorization")
     
-    response = await grpc_state["stub"].ProductSearch(customer_db_pb2.ProductSearchRequest(
-        session_id=session_id, 
-        category=category, 
-        keywords=keywords
-    ))
-    return jsonify(proto_to_dict(response))
-
-
-@app.route('/item/get', methods=['POST'])
-async def get_item():
-    data = await request.get_json() 
-    session_id = data.get("session_id")
-
-    # This call is non-blocking to the server's main thread
-    response = await grpc_state["stub"].GetItem(customer_db_pb2.GetItemRequest(
-        item_id=data.get("item_id"),
-        session_id=session_id
-    ))
-    return jsonify(proto_to_dict(response))
-
+    return await handle_grpc_call(
+        grpc_manager.stub.ProductSearch,
+        customer_db_pb2.ProductSearchRequest(
+            category=int(category) if category else 0, 
+            keywords=keywords,
+            session_id=session_id
+        )
+    )
 
 @app.route('/cart/add', methods=['POST'])
 async def add_to_cart():
     data = await request.get_json()
-    session_id = data.get("session_id")
-
-    # This call is non-blocking to the server's main thread
-    response = await grpc_state["stub"].AddItemToCart(customer_db_pb2.AddItemToCartRequest(
-        item_id=data.get("item_id"),
-        quantity=data.get("item_quantity"),
-        session_id=session_id
-    ))
-    return jsonify(proto_to_dict(response))
-
-@app.route('/cart/remove', methods=['POST'])
-async def remove_item_from_cart():
-    data = await request.get_json()
-    session_id = data.get("session_id")
-
-    # This call is non-blocking to the server's main thread
-    response = await grpc_state["stub"].RemoveItemFromCart(customer_db_pb2.RemoveItemFromCartRequest(
-        item_id=data.get("item_id"),
-        session_id=session_id
-    ))
-    return jsonify(proto_to_dict(response))
-
-@app.route('/cart/save', methods=['POST'])
-async def save_cart():
-    data = await request.get_json()
-    session_id = data.get("session_id")
-
-    # This call is non-blocking to the server's main thread
-    response = await grpc_state["stub"].SaveCart(customer_db_pb2.UserRequest(
-        session_id=session_id
-    ))
-    return jsonify(proto_to_dict(response))
+    return await handle_grpc_call(
+        grpc_manager.stub.AddItemToCart,
+        customer_db_pb2.AddItemToCartRequest(
+            item_id=str(data.get("item_id")),
+            quantity=int(data.get("item_quantity", 1)),
+            session_id=data.get("session_id")
+        )
+    )
 
 @app.route('/cart/display', methods=['POST'])
 async def display_cart():
     data = await request.get_json()
-    session_id = data.get("session_id")
-
-    # This call is non-blocking to the server's main thread
-    response = await grpc_state["stub"].DisplayCart(customer_db_pb2.UserRequest(
-        session_id=session_id
-    ))
-    return jsonify(proto_to_dict(response))
+    return await handle_grpc_call(
+        grpc_manager.stub.DisplayCart,
+        customer_db_pb2.UserRequest(session_id=data.get("session_id"))
+    )
 
 if __name__ == "__main__":
-    # Quart uses an asyncio event loop internally
+    # 50000 is a high port, ensure your GCP Firewall allows ingress on this port
     app.run(host='0.0.0.0', port=50000)
