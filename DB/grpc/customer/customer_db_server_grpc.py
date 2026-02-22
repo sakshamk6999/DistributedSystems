@@ -25,7 +25,7 @@ def getconn():
     conn = connector.connect(
         INSTANCE_CONNECTION_NAME,
         "pymysql",
-        user="root",
+        user="saksham_user",
         password="Customer-db-1",
         db="customer_db"
     )
