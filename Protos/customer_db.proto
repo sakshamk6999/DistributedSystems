@@ -1,0 +1,193 @@
+syntax = "proto3";
+import "google/protobuf/wrappers.proto";
+option java_multiple_files = true;
+option java_package = "io.grpc.examples.customerdbproto";
+option java_outer_classname = "CustomerDBProto";
+option objc_class_prefix = "CustomerDB";
+
+package customerdbproto;
+
+service CustomerDB {
+    // Registers the user for the service
+    rpc Register(RegisterRequest) returns (RegisterResponse) {}
+    // Logins the user for the service
+    rpc Login(LoginRequest) returns (UserResponse) {}
+    // Logsout the user for the service
+    rpc Logout(UserRequest) returns (google.protobuf.BoolValue) {}
+
+    rpc ProductSearch(ProductSearchRequest) returns (ProductSearchResponse) {}
+
+    rpc AddItemToCart(AddItemToCartRequest) returns (AddItemToCartResponse) {}
+
+    rpc GetItem(GetItemRequest) returns (GetItemResponse) {}
+
+    rpc RemoveItemFromCart(RemoveItemFromCartRequest) returns (RemoveItemFromCartResponse) {}
+
+    rpc SaveCart(UserRequest) returns (SaveCartResponse) {}
+
+    rpc ClearCart(UserRequest) returns (ClearCartResponse) {}
+
+    rpc DisplayCart(UserRequest) returns (DisplayCartResponse) {}
+
+    rpc ProvideFeedback(ProvideFeedbackRequest) returns (ProvideFeedbackResponse) {}
+
+    rpc GetSellerRating(GetSellerRatingRequest) returns (GetSellerRatingResponse) {}
+
+    rpc GetBuyerPurchases(UserRequest) returns (GetBuyerPurchasesResponse) {}
+
+    
+}
+
+enum Status {
+    OK = 0;
+    ERROR = 1;
+}
+
+enum CustomerType {
+    BUYER = 0;
+    SELLER = 1;
+}
+
+message RegisterRequest {
+    string username = 1;
+    string password = 2;
+    string name = 3;
+    CustomerType customer_type = 4;
+}
+
+message RegisterResponse {
+    Status status = 1;
+    string message = 2;
+    int32 id = 3;
+}
+
+message LoginRequest {
+    string username = 1;
+    string password = 2;
+    CustomerType customer_type = 4;
+}
+
+message UserRequest {
+    int32 session_id = 1;
+}
+
+message UserResponse {
+    Status status = 1;
+    string message = 2;
+    int32 session_id = 3;
+}
+
+message ProductSearchRequest {
+    int32 session_id = 1;
+    string category = 2;
+    repeated string keywords = 3;
+}
+
+message ProductSearchResponse {
+    int32 seller_id = 1;
+    int32 category = 2;
+    string name = 3;
+    repeated string keywords = 4;
+    int32 condition_val = 5;
+    float sale_price = 6;
+    int32 quantity = 7;
+    int32 thumbs_up = 8;
+    int32 thumbs_down = 9;
+    Status status = 10;
+}
+
+message AddItemToCartRequest {
+    int32 item_id = 1;
+    int32 quantity = 2;
+    int32 session_id = 3;
+}
+
+message AddItemToCartResponse {
+    Status status = 1;
+    string message = 2;
+}
+
+message GetItemRequest {
+    int32 session_id = 1;
+    int32 item_id = 2;
+}
+
+message GetItemResponse {
+    int32 session_id = 1;
+    int32 item_id = 2;
+    int32 seller_id = 3;
+    int32 category = 4;
+    string name = 5;
+    string keywords = 6;
+    int32 condition = 7;
+    float sale_price = 8;
+    int32 quantity = 9;
+    int32 thumbs_up = 10;
+    int32 thumbs_down = 11;
+}
+
+message RemoveItemFromCartRequest {
+    int32 session_id = 1;
+    int32 item_id = 2;
+}
+
+message RemoveItemFromCartResponse {
+    Status status = 1;
+    string message = 2;
+}
+
+message SaveCartResponse {
+    Status status = 1;
+    string message = 2;
+}
+
+message ItemInCart {
+    int32 item_id = 1;
+    int32 quantity = 2;
+}
+
+message DisplayCartResponse {
+    Status status = 1;
+    string message = 2;
+    repeated ItemInCart items = 3;
+}
+
+message ClearCartResponse {
+    Status status = 1;
+    string message = 2;
+}
+
+message ProvideFeedbackRequest {
+
+    enum FeedbackType {
+        UP = 0;
+        DOWN = 1;
+    }
+
+    int32 session_id = 1;
+    int32 item_id = 2;
+    ProvideFeedbackRequest.FeedbackType feedback = 3;
+}
+
+message ProvideFeedbackResponse {
+    Status status = 1;
+    string message = 2;
+}
+
+message GetSellerRatingRequest {
+    int32 session_id = 1;
+    int32 seller_id = 2;
+}
+
+message GetSellerRatingResponse {
+    Status status = 1;
+    string message = 2;
+    int32 thumbs_up = 3;
+    int32 thumbs_down = 4;
+}
+
+message GetBuyerPurchasesResponse {
+    Status status = 1;
+    string message = 2;
+    repeated string purchases = 3;
+}
