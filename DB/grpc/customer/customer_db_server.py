@@ -17,15 +17,6 @@ CUSTOMER_DB_CONFIG = {
     "cursorclass": pymysql.cursors.DictCursor
 }
 
-PRODUCT_DB_CONFIG = {
-    "host": os.getenv("PRODUCT_DB_HOST", "0.0.0.0"),
-    "port": os.getenv("PRODUCT_DB_PORT", 8001),
-    "user": "root",
-    "password": os.getenv("PRODUCT_DB_PASSWORD", "my-secret-pw"),
-    "database": "product_db",
-    "cursorclass": pymysql.cursors.DictCursor
-}
-
 def create_customer_db_connection():
     """Create a new MySQL connection for each thread."""
     try:
@@ -35,16 +26,26 @@ def create_customer_db_connection():
     except pymysql.Error as err:
         print(f"Error connecting to MySQL: {err}")
         return None
+    
+def setup_databses():
+    conn = create_customer_db_connection()
+    with conn.cursor() as cursor:
+        print("creating sellers table")
 
-def create_product_db_connection():
-    """Create a new MySQL connection for each thread."""
-    try:
-        connection = pymysql.connect(**PRODUCT_DB_CONFIG)
-        print(f"Successfully connected to the product db")
-        return connection
-    except pymysql.Error as err:
-        # print(f"Error connecting to MySQL: {err}")
-        return None
+        cursor.execute(f'''
+CREATE TABLE IF NOT EXISTS sellers (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    username VARCHAR(32) NOT NULL UNIQUE,
+    password VARCHAR(32) NOT NULL,
+    name VARCHAR(32) NOT NULL,
+    thumbs_up INT DEFAULT 0,
+    thumbs_down INT DEFAULT 0,
+    items_sold INT DEFAULT 0
+);
+''')
+        conn.commit()
+
+        print("created sellers")
 
 def return_session_id(request_body):
     user_session_id = request_body.session_id
@@ -148,81 +149,81 @@ class BuyerDBService(customer_db_pb2_grpc.CustomerDBServicer):
                 if "conn" in locals() and conn.open:
                     conn.close()
     
-    def GetItem(self, request: customer_db_pb2.GetItemRequest, context):
-        conn = create_product_db_connection()
-        item_id = request.item_id
+    # def GetItem(self, request: customer_db_pb2.GetItemRequest, context):
+    #     conn = create_product_db_connection()
+    #     item_id = request.item_id
 
-        with conn.cursor() as cursor:
-            try:
-                query = "SELECT * FROM items WHERE id=%s"
-                query_var = (item_id)
+    #     with conn.cursor() as cursor:
+    #         try:
+    #             query = "SELECT * FROM items WHERE id=%s"
+    #             query_var = (item_id)
 
-                cursor.execute(query, query_var)
-                item = cursor.fetchone()
+    #             cursor.execute(query, query_var)
+    #             item = cursor.fetchone()
 
-                return customer_db_pb2.GetItemResponse(**item)
-            except Exception as e:
-                # return {"status": "ERROR", "message": str(e)}
-                return customer_db_pb2.GetItemResponse(**item)
-            finally:
-                if "conn" in locals() and conn.open:
-                    conn.close()
+    #             return customer_db_pb2.GetItemResponse(**item)
+    #         except Exception as e:
+    #             # return {"status": "ERROR", "message": str(e)}
+    #             return customer_db_pb2.GetItemResponse(**item)
+    #         finally:
+    #             if "conn" in locals() and conn.open:
+    #                 conn.close()
 
-    def AddItemToCart(self, request: customer_db_pb2.AddItemToCartRequest, context):
-        user_conn = create_customer_db_connection()
-        product_conn = create_product_db_connection()
-        session_id = return_session_id(request)
+    # def AddItemToCart(self, request: customer_db_pb2.AddItemToCartRequest, context):
+    #     user_conn = create_customer_db_connection()
+    #     product_conn = create_product_db_connection()
+    #     session_id = return_session_id(request)
 
-        if session_id == None:
-            return customer_db_pb2.AddItemToCartResponse(status=customer_db_pb2.Status.ERROR)
+    #     if session_id == None:
+    #         return customer_db_pb2.AddItemToCartResponse(status=customer_db_pb2.Status.ERROR)
         
-        item_id = request.item_id
-        item_quantity = request.item_quantity
+    #     item_id = request.item_id
+    #     item_quantity = request.item_quantity
 
-        with user_conn.cursor() as cursor:
-            try:
-                cursor.execute(
-                    f"SELECT * FROM session_cart WHERE session_id=%s",
-                    (session_id)
-                )
+    #     with user_conn.cursor() as cursor:
+    #         try:
+    #             cursor.execute(
+    #                 f"SELECT * FROM session_cart WHERE session_id=%s",
+    #                 (session_id)
+    #             )
 
-                session_items = cursor.fetchone()
+    #             session_items = cursor.fetchone()
 
-                if session_items['items']:
-                    # print("Current session items", session_items['items'])
-                    session_items = session_items['items'].split(";")
-                else:
-                    session_items = []
+    #             if session_items['items']:
+    #                 # print("Current session items", session_items['items'])
+    #                 session_items = session_items['items'].split(";")
+    #             else:
+    #                 session_items = []
 
-                with product_conn.cursor() as product_cursor:
-                    product_cursor.execute(
-                        f"SELECT * FROM items WHERE id=%s and quantity>=%s",
-                        (item_id, item_quantity)
-                    )
+    #             with product_conn.cursor() as product_cursor:
+    #                 product_cursor.execute(
+    #                     f"SELECT * FROM items WHERE id=%s and quantity>=%s",
+    #                     (item_id, item_quantity)
+    #                 )
 
-                    if product_cursor.fetchone():
-                        session_items.append(f"{item_id}|{item_quantity}")
+    #                 if product_cursor.fetchone():
+    #                     session_items.append(f"{item_id}|{item_quantity}")
 
-                        cursor.execute(
-                            f"UPDATE session_cart set items=%s where session_id=%s",
-                            (';'.join(session_items), session_id)
-                        )
-                        user_conn.commit()
-                        # return {"status": "OK", "message": f"Item {item_id} added to cart with quantity {item_quantity}"}
-                        return customer_db_pb2.AddItemToCartResponse(status=customer_db_pb2.Status.OK, message= f"Item {item_id} added to cart with quantity {item_quantity}")
-                    else:
-                        # return {"status": "ERROR", "message": f"Item {item_id} with quantity {item_quantity} not found"}
-                        return customer_db_pb2.AddItemToCartResponse(status=customer_db_pb2.Status.ERROR, message= f"Item {item_id} with quantity {item_quantity} not found")
+    #                     cursor.execute(
+    #                         f"UPDATE session_cart set items=%s where session_id=%s",
+    #                         (';'.join(session_items), session_id)
+    #                     )
+    #                     user_conn.commit()
+    #                     # return {"status": "OK", "message": f"Item {item_id} added to cart with quantity {item_quantity}"}
+    #                     return customer_db_pb2.AddItemToCartResponse(status=customer_db_pb2.Status.OK, message= f"Item {item_id} added to cart with quantity {item_quantity}")
+    #                 else:
+    #                     # return {"status": "ERROR", "message": f"Item {item_id} with quantity {item_quantity} not found"}
+    #                     return customer_db_pb2.AddItemToCartResponse(status=customer_db_pb2.Status.ERROR, message= f"Item {item_id} with quantity {item_quantity} not found")
 
-            except Exception as e:
-                # return {"status": "ERROR", "message": str(e)}
-                return customer_db_pb2.AddItemToCartResponse(status=customer_db_pb2.Status.ERROR, message= str(e))
-            finally:
-                if "user_conn" in locals() and user_conn.open:
-                    user_conn.close()
+    #         except Exception as e:
+    #             # return {"status": "ERROR", "message": str(e)}
+    #             return customer_db_pb2.AddItemToCartResponse(status=customer_db_pb2.Status.ERROR, message= str(e))
+    #         finally:
+    #             if "user_conn" in locals() and user_conn.open:
+    #                 user_conn.close()
 
-                if "product_conn" in locals() and product_conn.open:
-                    product_conn.close()
+    #             if "product_conn" in locals() and product_conn.open:
+    #                 product_conn.close()
     
     def RemoveItemFromCart(self, request: customer_db_pb2.RemoveItemFromCartRequest, context):
         user_conn = create_customer_db_connection()
@@ -358,4 +359,5 @@ def serve():
 
 if __name__ == "__main__":
     logging.basicConfig()
+    setup_databses()
     serve()
