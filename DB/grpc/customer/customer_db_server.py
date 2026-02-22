@@ -26,6 +26,28 @@ def create_customer_db_connection():
     except pymysql.Error as err:
         print(f"Error connecting to MySQL: {err}")
         return None
+
+def create_database():
+    try:
+        init_db = {
+    "host": os.getenv("CUSTOMER_DB_HOST", "0.0.0.0"),
+    "port": os.getenv("CUSTOMER_DB_PORT", 8000),
+    "user": "root",
+    "password": os.getenv("CUSTOMER_DB_PASSWORD", "my-secret-pw"),
+    "cursorclass": pymysql.cursors.DictCursor
+}
+
+        connection = pymysql.connect(**init_db)
+        # print(f"Successfully connected to the customer db")
+        cursor = connection.cursor()
+
+        create_db_query = f"CREATE DATABASE IF NOT EXISTS customer_db"
+        cursor.execute(create_db_query)
+        print(f"Database 'customer_db' ensured to exist (created or already present).")
+        connection.commit()
+    except pymysql.Error as err:
+        print(f"Error connecting to MySQL: {err}")
+        return None
     
 def setup_databses():
     conn = create_customer_db_connection()
@@ -359,5 +381,7 @@ def serve():
 
 if __name__ == "__main__":
     logging.basicConfig()
+    print("creating database")
+    create_database()
     setup_databses()
     serve()
