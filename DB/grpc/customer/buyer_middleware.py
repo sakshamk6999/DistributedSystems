@@ -6,10 +6,14 @@ import customer_db_pb2_grpc
 from quart import Quart, request, jsonify
 from google.protobuf.json_format import MessageToDict
 
+from zeep import Client
+import asyncio
+
+BANK_WSDL_URL = os.getenv("BANK_WSDL_URL", "http://localhost:8000/?wsdl")
+
 app = Quart(__name__)
 
 # --- Configuration ---
-# Use the Internal IP of your Server VM here
 GRPC_SERVER_ADDR = os.getenv("GRPC_SERVER_ADDR", "localhost:50051")
 
 class GRPCManager:
@@ -18,7 +22,6 @@ class GRPCManager:
         self.stub = None
 
     async def init(self):
-        # We use a single persistent channel for all requests
         self.channel = grpc.aio.insecure_channel(GRPC_SERVER_ADDR)
         self.stub = customer_db_pb2_grpc.CustomerDBStub(self.channel)
         print(f"Connected to gRPC server at {GRPC_SERVER_ADDR}")
@@ -39,24 +42,23 @@ async def shutdown():
 
 # --- Helpers ---
 def proto_to_dict(response):
-    """Converts Protobuf message to JSON-friendly dict."""
     return MessageToDict(response, 
                          preserving_proto_field_name=True, 
                          including_default_value_fields=True)
 
 async def handle_grpc_call(rpc_method, proto_request):
-    """Generic wrapper to handle gRPC errors gracefully."""
     try:
         response = await rpc_method(proto_request)
         return jsonify(proto_to_dict(response))
     except grpc.RpcError as e:
         status_code = 500
-        # Map gRPC Unauthenticated to HTTP 401
         if e.code() == grpc.StatusCode.UNAUTHENTICATED:
             status_code = 401
+        elif e.code() == grpc.StatusCode.NOT_FOUND:
+            status_code = 404
         return jsonify({"error": str(e.code()), "details": e.details()}), status_code
 
-# --- Routes ---
+# --- Account Routes ---
 
 @app.route('/register', methods=['POST'])
 async def register():
@@ -81,13 +83,14 @@ async def login():
         )
     )
 
+# --- Product Routes ---
+
 @app.route('/products/search', methods=['GET'])
 async def product_search():
-    # Extract params from Query String
     category = request.args.get("category")
     keywords = request.args.getlist("keywords")
-    # Usually better to pass session_id in Headers for GET requests
-    session_id = request.headers.get("Authorization")
+    # Using Authorization header as a fallback for session tracking on GETs
+    session_id = request.headers.get("Authorization") or request.args.get("session_id")
     
     return await handle_grpc_call(
         grpc_manager.stub.ProductSearch,
@@ -98,6 +101,17 @@ async def product_search():
         )
     )
 
+@app.route('/item/get', methods=['GET'])
+async def get_item():
+    # GET request using query params
+    item_id = request.args.get("item_id")
+    return await handle_grpc_call(
+        grpc_manager.stub.GetItem,
+        customer_db_pb2.GetItemRequest(item_id=str(item_id))
+    )
+
+# --- Cart Routes ---
+
 @app.route('/cart/add', methods=['POST'])
 async def add_to_cart():
     data = await request.get_json()
@@ -105,7 +119,18 @@ async def add_to_cart():
         grpc_manager.stub.AddItemToCart,
         customer_db_pb2.AddItemToCartRequest(
             item_id=str(data.get("item_id")),
-            quantity=int(data.get("item_quantity", 1)),
+            item_quantity=int(data.get("item_quantity", 1)),
+            session_id=data.get("session_id")
+        )
+    )
+
+@app.route('/cart/remove', methods=['POST'])
+async def remove_from_cart():
+    data = await request.get_json()
+    return await handle_grpc_call(
+        grpc_manager.stub.RemoveItemFromCart,
+        customer_db_pb2.RemoveItemFromCartRequest(
+            item_id=str(data.get("item_id")),
             session_id=data.get("session_id")
         )
     )
@@ -113,11 +138,69 @@ async def add_to_cart():
 @app.route('/cart/display', methods=['POST'])
 async def display_cart():
     data = await request.get_json()
+    # Note: Using UserRequest as per your gRPC definition
     return await handle_grpc_call(
         grpc_manager.stub.DisplayCart,
         customer_db_pb2.UserRequest(session_id=data.get("session_id"))
     )
 
+@app.route('/cart/save', methods=['POST'])
+async def save_cart():
+    data = await request.get_json()
+    return await handle_grpc_call(
+        grpc_manager.stub.SaveCart,
+        customer_db_pb2.UserRequest(session_id=data.get("session_id"))
+    )
+
+@app.route('/cart/clear', methods=['POST'])
+async def clear_cart():
+    data = await request.get_json()
+    return await handle_grpc_call(
+        grpc_manager.stub.ClearCart,
+        customer_db_pb2.UserRequest(session_id=data.get("session_id"))
+    )
+
+@app.route('/cart/purchase', methods=['POST'])
+async def make_purchase():
+    data = await request.get_json()
+    session_id = data.get("session_id")
+    
+    # We'll use these for the SOAP call (dummy data or real values)
+    card_number = data.get("card_number", "0000-0000-0000-0000")
+    amount = data.get("amount", "0.00")
+
+    try:
+        # 1. Call the SOAP Service (Emulated Bank)
+        # We run this in a thread because Zeep is synchronous
+        def call_soap():
+            client = Client(BANK_WSDL_URL)
+            # Match the method name 'process_payment' from the SOAP script
+            return client.service.process_payment(card_number, amount)
+
+        bank_response = await asyncio.to_thread(call_soap)
+
+        # 2. Check if Bank said "yes"
+        if bank_response.lower() == "yes":
+            # 3. Call the gRPC Service to finalize the purchase
+            return await handle_grpc_call(
+                grpc_manager.stub.MakePurchase,
+                customer_db_pb2.UserRequest(session_id=session_id)
+            )
+        else:
+            # Bank returned "no" (10% chance)
+            return jsonify({
+                "status": "ERROR",
+                "message": "Bank transaction failed: Payment declined by emulated bank."
+            }), 402  # 402 Payment Required
+
+    except Exception as e:
+        logging.error(f"Purchase flow error: {e}")
+        return jsonify({
+            "status": "ERROR", 
+            "message": f"Middleware error during purchase: {str(e)}"
+        }), 500
+
+
 if __name__ == "__main__":
-    # 50000 is a high port, ensure your GCP Firewall allows ingress on this port
+    # Ensure port 50000 is open in GCE Firewall
     app.run(host='0.0.0.0', port=50000)
