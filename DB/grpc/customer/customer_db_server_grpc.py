@@ -130,7 +130,7 @@ class BuyerDBService(customer_db_pb2_grpc.CustomerDBServicer):
                     )
                 else:
                     result = conn.execute(
-                        sqlalchemy.text("INSERT INTO buyers (username, password, name) VALUES (:u, :p, :n)"),
+                        sqlalchemy.text("INSERT INTO sellers (username, password, name) VALUES (:u, :p, :n)"),
                         {"u": request.username, "p": request.password, "n": request.name}
                     )
                     user_id = result.lastrowid
