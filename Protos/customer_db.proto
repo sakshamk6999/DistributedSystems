@@ -35,7 +35,7 @@ service CustomerDB {
 
     rpc GetBuyerPurchases(UserRequest) returns (GetBuyerPurchasesResponse) {}
 
-    
+    rpc MakePurchase(UserRequest) returns (MakePurchaseResponse) {}
 }
 
 enum Status {
@@ -190,4 +190,9 @@ message GetBuyerPurchasesResponse {
     Status status = 1;
     string message = 2;
     repeated string purchases = 3;
+}
+
+message MakePurchaseResponse {
+    Status status = 1;
+    string message = 2;
 }
