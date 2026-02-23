@@ -88,9 +88,10 @@ async def login():
 async def product_search():
     category = request.args.get("category")
     keywords = request.args.getlist("keywords")
+    print("request", request.args)
     # Using Authorization header as a fallback for session tracking on GETs
     session_id = request.headers.get("Authorization") or request.args.get("session_id")
-    
+    print("session_id", session_id)
     return await handle_grpc_call(
         grpc_manager.stub.ProductSearch,
         customer_db_pb2.ProductSearchRequest(
