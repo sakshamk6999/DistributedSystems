@@ -67,7 +67,8 @@ async def register():
         customer_db_pb2.RegisterRequest(
             username=data.get("username"),
             password=data.get("password"),
-            name=data.get("name")
+            name=data.get("name"),
+            customer_type=customer_db_pb2.CustomerType.BUYER
         )
     )
 
@@ -78,7 +79,8 @@ async def login():
         grpc_manager.stub.Login,
         customer_db_pb2.LoginRequest(
             username=data.get("username"),
-            password=data.get("password")
+            password=data.get("password"),
+            customer_type=customer_db_pb2.CustomerType.BUYER
         )
     )
 

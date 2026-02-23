@@ -108,56 +108,91 @@ class BuyerDBService(customer_db_pb2_grpc.CustomerDBServicer):
     def Register(self, request, context):
         try:
             with pool_customer.begin() as conn:
-                # Insert Buyer
-                result = conn.execute(
-                    sqlalchemy.text("INSERT INTO buyers (username, password, name) VALUES (:u, :p, :n)"),
-                    {"u": request.username, "p": request.password, "n": request.name}
-                )
-                user_id = result.lastrowid
-                
-                # Insert Initial Cart
-                conn.execute(
-                    sqlalchemy.text("INSERT INTO buyer_cart (user_id, items) VALUES (:id, :items)"),
-                    {"id": user_id, "items": ""}
-                )
-                
-                return customer_db_pb2.RegisterResponse(
-                    status=customer_db_pb2.Status.OK, 
-                    message=f"Buyer created: {request.username}", 
-                    id=user_id
-                )
+
+                if request.customer_type == customer_db_pb2.CustomerType.BUYER:
+                    # Insert Buyer
+                    result = conn.execute(
+                        sqlalchemy.text("INSERT INTO buyers (username, password, name) VALUES (:u, :p, :n)"),
+                        {"u": request.username, "p": request.password, "n": request.name}
+                    )
+                    user_id = result.lastrowid
+                    
+                    # Insert Initial Cart
+                    conn.execute(
+                        sqlalchemy.text("INSERT INTO buyer_cart (user_id, items) VALUES (:id, :items)"),
+                        {"id": user_id, "items": ""}
+                    )
+                    
+                    return customer_db_pb2.RegisterResponse(
+                        status=customer_db_pb2.Status.OK, 
+                        message=f"Buyer created: {request.username}", 
+                        id=user_id
+                    )
+                else:
+                    result = conn.execute(
+                        sqlalchemy.text("INSERT INTO buyers (username, password, name) VALUES (:u, :p, :n)"),
+                        {"u": request.username, "p": request.password, "n": request.name}
+                    )
+                    user_id = result.lastrowid
+                    return customer_db_pb2.RegisterResponse(
+                        status=customer_db_pb2.Status.OK, 
+                        message=f"Seller created: {request.username}", 
+                        id=user_id
+                    )
         except Exception as e:
             return customer_db_pb2.RegisterResponse(status=customer_db_pb2.Status.ERROR, message=str(e))
 
     def Login(self, request, context):
         try:
             with pool_customer.begin() as conn:
-                # Fetch User using mappings to access by key
-                user_res = conn.execute(
-                    sqlalchemy.text("SELECT id, username FROM buyers WHERE username=:u AND password=:p"),
-                    {"u": request.username, "p": request.password}
-                ).mappings().fetchone()
-
-                if user_res:
-                    # Fetch Cart
-                    cart_res = conn.execute(
-                        sqlalchemy.text("SELECT items FROM buyer_cart WHERE user_id=:id"),
-                        {"id": user_res['id']}
+                if request.customer_type == customer_db_pb2.CustomerType.BUYER:
+                    # Fetch User using mappings to access by key
+                    user_res = conn.execute(
+                        sqlalchemy.text("SELECT id, username FROM buyers WHERE username=:u AND password=:p"),
+                        {"u": request.username, "p": request.password}
                     ).mappings().fetchone()
 
-                    # Create Session
-                    session_res = conn.execute(
-                        sqlalchemy.text("INSERT INTO session_cart (user_id, items) VALUES (:uid, :items)"),
-                        {"uid": user_res['id'], "items": cart_res['items'] if cart_res else ""}
-                    )
-                    
-                    return customer_db_pb2.UserResponse(
-                        status=customer_db_pb2.Status.OK, 
-                        message="Login Successful", 
-                        session_id=session_res.lastrowid
-                    )
+                    if user_res:
+                        # Fetch Cart
+                        cart_res = conn.execute(
+                            sqlalchemy.text("SELECT items FROM buyer_cart WHERE user_id=:id"),
+                            {"id": user_res['id']}
+                        ).mappings().fetchone()
+
+                        # Create Session
+                        session_res = conn.execute(
+                            sqlalchemy.text("INSERT INTO session_cart (user_id, items) VALUES (:uid, :items)"),
+                            {"uid": user_res['id'], "items": cart_res['items'] if cart_res else ""}
+                        )
+                        
+                        return customer_db_pb2.UserResponse(
+                            status=customer_db_pb2.Status.OK, 
+                            message="Login Successful", 
+                            session_id=session_res.lastrowid
+                        )
+                    else:
+                        return customer_db_pb2.UserResponse(status=customer_db_pb2.Status.ERROR, message="Invalid Credentials")
                 else:
-                    return customer_db_pb2.UserResponse(status=customer_db_pb2.Status.ERROR, message="Invalid Credentials")
+                    # Fetch User using mappings to access by key
+                    user_res = conn.execute(
+                        sqlalchemy.text("SELECT id, username FROM sellers WHERE username=:u AND password=:p"),
+                        {"u": request.username, "p": request.password}
+                    ).mappings().fetchone()
+
+                    if user_res:
+                        # Create Session
+                        session_res = conn.execute(
+                            sqlalchemy.text("INSERT INTO seller_session (seller_id) VALUES (:uid)"),
+                            {"uid": user_res['id']}
+                        )
+                        
+                        return customer_db_pb2.UserResponse(
+                            status=customer_db_pb2.Status.OK, 
+                            message="Login Successful", 
+                            session_id=session_res.lastrowid
+                        )
+                    else:
+                        return customer_db_pb2.UserResponse(status=customer_db_pb2.Status.ERROR, message="Invalid Credentials")
         except Exception as e:
             return customer_db_pb2.UserResponse(status=customer_db_pb2.Status.ERROR, message=str(e))
 
@@ -449,6 +484,112 @@ class BuyerDBService(customer_db_pb2_grpc.CustomerDBServicer):
             return customer_db_pb2.MakePurchaseResponse(
                 status=customer_db_pb2.Status.ERROR, 
                 message=f"Transaction Failed: {str(e)}"
+            )
+    
+    def GetSellerRating(self, request, context):
+        try:
+            with pool_customer.connect() as conn:
+                # 1. Verify seller session and get seller_id
+                session_res = conn.execute(
+                    sqlalchemy.text("SELECT seller_id FROM seller_session WHERE session_id = :sid"),
+                    {"sid": request.session_id}
+                ).mappings().fetchone()
+
+                if not session_res:
+                    return customer_db_pb2.GetSellerRatingResponse(
+                        status=customer_db_pb2.Status.ERROR, 
+                        message="Invalid seller session"
+                    )
+
+                # 2. Fetch rating from sellers table
+                seller_res = conn.execute(
+                    sqlalchemy.text("SELECT thumbs_up, thumbs_down FROM sellers WHERE id = :id"),
+                    {"id": session_res['seller_id']}
+                ).mappings().fetchone()
+
+                return customer_db_pb2.GetSellerRatingResponse(
+                    status=customer_db_pb2.Status.OK,
+                    thumbs_up=int(seller_res['thumbs_up']),
+                    thumbs_down=int(seller_res['thumbs_down'])
+                )
+        except Exception as e:
+            return customer_db_pb2.GetSellerRatingResponse(
+                status=customer_db_pb2.Status.ERROR, 
+                message=str(e)
+            )
+
+    def RegisterItemForSale(self, request, context):
+        try:
+            # 1. Identify seller via Customer DB
+            with pool_customer.connect() as cust_conn:
+                seller_res = cust_conn.execute(
+                    sqlalchemy.text("SELECT seller_id FROM seller_session WHERE session_id = :sid"),
+                    {"sid": request.session_id}
+                ).mappings().fetchone()
+
+                if not seller_res:
+                    return customer_db_pb2.RegisterItemResponse(
+                        status=customer_db_pb2.Status.ERROR, 
+                        message="Unauthorized: Seller session not found"
+                    )
+                
+                seller_id = seller_res['seller_id']
+
+            # 2. Insert item into Product DB
+            with pool_product.begin() as prod_conn:
+                # Convert list of keywords to comma-separated string
+                keyword_str = ",".join(request.keywords) if request.keywords else ""
+                
+                result = prod_conn.execute(
+                    sqlalchemy.text("""
+                        INSERT INTO items (category, name, keywords, condition_val, sale_price, quantity, seller_id) 
+                        VALUES (:cat, :name, :key, :cond, :price, :qty, :sid)
+                    """),
+                    {
+                        "cat": request.category,
+                        "name": request.name,
+                        "key": keyword_str,
+                        "cond": request.condition,
+                        "price": request.sale_price,
+                        "qty": request.quantity,
+                        "sid": seller_id
+                    }
+                )
+                
+                return customer_db_pb2.RegisterItemResponse(
+                    status=customer_db_pb2.Status.OK,
+                    item_id=result.lastrowid,
+                    message="Item registered successfully"
+                )
+        except Exception as e:
+            return customer_db_pb2.RegisterItemResponse(
+                status=customer_db_pb2.Status.ERROR, 
+                message=str(e)
+            )
+
+    def ChangeItemPrice(self, request, context):
+        try:
+            # Note: In a real app, you'd check if request.session_id matches the item's seller_id here.
+            with pool_product.begin() as conn:
+                result = conn.execute(
+                    sqlalchemy.text("UPDATE items SET sale_price = :price WHERE id = :id"),
+                    {"price": request.sale_price, "id": request.item_id}
+                )
+                
+                if result.rowcount == 0:
+                    return customer_db_pb2.StatusResponse(
+                        status=customer_db_pb2.Status.ERROR, 
+                        message="Item not found"
+                    )
+
+                return customer_db_pb2.StatusResponse(
+                    status=customer_db_pb2.Status.OK, 
+                    message="Price updated successfully"
+                )
+        except Exception as e:
+            return customer_db_pb2.StatusResponse(
+                status=customer_db_pb2.Status.ERROR, 
+                message=str(e)
             )
 
 

@@ -31,11 +31,17 @@ service CustomerDB {
 
     rpc ProvideFeedback(ProvideFeedbackRequest) returns (ProvideFeedbackResponse) {}
 
-    rpc GetSellerRating(GetSellerRatingRequest) returns (GetSellerRatingResponse) {}
+    rpc GetSellerRatingForBuyer(GetSellerRatingForBuyerRequest) returns (GetSellerRatingForBuyerResponse) {}
 
     rpc GetBuyerPurchases(UserRequest) returns (GetBuyerPurchasesResponse) {}
 
     rpc MakePurchase(UserRequest) returns (MakePurchaseResponse) {}
+
+    rpc GetSellerRating(UserRequest) returns (GetSellerRatingResponse) {}
+
+    rpc RegisterItemForSale(RegisterItemForSaleRequest) returns (RegisterItemForSaleResponse) {}
+
+    rpc ChangeItemPrice(ChangeItemPriceRequest) returns (ChangeItemPriceResponse) {}
 }
 
 enum Status {
@@ -174,12 +180,12 @@ message ProvideFeedbackResponse {
     string message = 2;
 }
 
-message GetSellerRatingRequest {
+message GetSellerRatingForBuyerRequest {
     int32 session_id = 1;
     int32 seller_id = 2;
 }
 
-message GetSellerRatingResponse {
+message GetSellerRatingForBuyerResponse {
     Status status = 1;
     string message = 2;
     int32 thumbs_up = 3;
@@ -193,6 +199,42 @@ message GetBuyerPurchasesResponse {
 }
 
 message MakePurchaseResponse {
+    Status status = 1;
+    string message = 2;
+}
+
+
+message GetSellerRatingResponse {
+    Status status = 1;
+    string message = 2;
+    int32 thumbs_up = 3;
+    int32 thumbs_down = 4;
+}
+
+message RegisterItemForSaleRequest {
+    int32 session_id = 1;
+    string name = 2;
+    int32 category = 3;
+    repeated string keywords = 4;
+    int32 condition = 5;
+    float sale_price = 6;
+    int32 quantity = 7;
+}
+
+
+message RegisterItemForSaleResponse {
+    Status status = 1;
+    string message = 2;
+    int32 item_id=3;
+}
+
+message ChangeItemPriceRequest {
+    int32 session_id = 1;
+    int32 item_id=2;
+    float sale_price=3;
+}
+
+message ChangeItemPriceResponse {
     Status status = 1;
     string message = 2;
 }

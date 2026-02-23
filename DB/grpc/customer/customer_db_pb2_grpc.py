@@ -90,10 +90,10 @@ class CustomerDBStub(object):
                 request_serializer=customer__db__pb2.ProvideFeedbackRequest.SerializeToString,
                 response_deserializer=customer__db__pb2.ProvideFeedbackResponse.FromString,
                 _registered_method=True)
-        self.GetSellerRating = channel.unary_unary(
-                '/customerdbproto.CustomerDB/GetSellerRating',
-                request_serializer=customer__db__pb2.GetSellerRatingRequest.SerializeToString,
-                response_deserializer=customer__db__pb2.GetSellerRatingResponse.FromString,
+        self.GetSellerRatingForBuyer = channel.unary_unary(
+                '/customerdbproto.CustomerDB/GetSellerRatingForBuyer',
+                request_serializer=customer__db__pb2.GetSellerRatingForBuyerRequest.SerializeToString,
+                response_deserializer=customer__db__pb2.GetSellerRatingForBuyerResponse.FromString,
                 _registered_method=True)
         self.GetBuyerPurchases = channel.unary_unary(
                 '/customerdbproto.CustomerDB/GetBuyerPurchases',
@@ -104,6 +104,21 @@ class CustomerDBStub(object):
                 '/customerdbproto.CustomerDB/MakePurchase',
                 request_serializer=customer__db__pb2.UserRequest.SerializeToString,
                 response_deserializer=customer__db__pb2.MakePurchaseResponse.FromString,
+                _registered_method=True)
+        self.GetSellerRating = channel.unary_unary(
+                '/customerdbproto.CustomerDB/GetSellerRating',
+                request_serializer=customer__db__pb2.UserRequest.SerializeToString,
+                response_deserializer=customer__db__pb2.GetSellerRatingResponse.FromString,
+                _registered_method=True)
+        self.RegisterItemForSale = channel.unary_unary(
+                '/customerdbproto.CustomerDB/RegisterItemForSale',
+                request_serializer=customer__db__pb2.RegisterItemForSaleRequest.SerializeToString,
+                response_deserializer=customer__db__pb2.RegisterItemForSaleResponse.FromString,
+                _registered_method=True)
+        self.ChangeItemPrice = channel.unary_unary(
+                '/customerdbproto.CustomerDB/ChangeItemPrice',
+                request_serializer=customer__db__pb2.ChangeItemPriceRequest.SerializeToString,
+                response_deserializer=customer__db__pb2.ChangeItemPriceResponse.FromString,
                 _registered_method=True)
 
 
@@ -179,7 +194,7 @@ class CustomerDBServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
-    def GetSellerRating(self, request, context):
+    def GetSellerRatingForBuyer(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -192,6 +207,24 @@ class CustomerDBServicer(object):
         raise NotImplementedError('Method not implemented!')
 
     def MakePurchase(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def GetSellerRating(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def RegisterItemForSale(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def ChangeItemPrice(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -255,10 +288,10 @@ def add_CustomerDBServicer_to_server(servicer, server):
                     request_deserializer=customer__db__pb2.ProvideFeedbackRequest.FromString,
                     response_serializer=customer__db__pb2.ProvideFeedbackResponse.SerializeToString,
             ),
-            'GetSellerRating': grpc.unary_unary_rpc_method_handler(
-                    servicer.GetSellerRating,
-                    request_deserializer=customer__db__pb2.GetSellerRatingRequest.FromString,
-                    response_serializer=customer__db__pb2.GetSellerRatingResponse.SerializeToString,
+            'GetSellerRatingForBuyer': grpc.unary_unary_rpc_method_handler(
+                    servicer.GetSellerRatingForBuyer,
+                    request_deserializer=customer__db__pb2.GetSellerRatingForBuyerRequest.FromString,
+                    response_serializer=customer__db__pb2.GetSellerRatingForBuyerResponse.SerializeToString,
             ),
             'GetBuyerPurchases': grpc.unary_unary_rpc_method_handler(
                     servicer.GetBuyerPurchases,
@@ -269,6 +302,21 @@ def add_CustomerDBServicer_to_server(servicer, server):
                     servicer.MakePurchase,
                     request_deserializer=customer__db__pb2.UserRequest.FromString,
                     response_serializer=customer__db__pb2.MakePurchaseResponse.SerializeToString,
+            ),
+            'GetSellerRating': grpc.unary_unary_rpc_method_handler(
+                    servicer.GetSellerRating,
+                    request_deserializer=customer__db__pb2.UserRequest.FromString,
+                    response_serializer=customer__db__pb2.GetSellerRatingResponse.SerializeToString,
+            ),
+            'RegisterItemForSale': grpc.unary_unary_rpc_method_handler(
+                    servicer.RegisterItemForSale,
+                    request_deserializer=customer__db__pb2.RegisterItemForSaleRequest.FromString,
+                    response_serializer=customer__db__pb2.RegisterItemForSaleResponse.SerializeToString,
+            ),
+            'ChangeItemPrice': grpc.unary_unary_rpc_method_handler(
+                    servicer.ChangeItemPrice,
+                    request_deserializer=customer__db__pb2.ChangeItemPriceRequest.FromString,
+                    response_serializer=customer__db__pb2.ChangeItemPriceResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -579,7 +627,7 @@ class CustomerDB(object):
             _registered_method=True)
 
     @staticmethod
-    def GetSellerRating(request,
+    def GetSellerRatingForBuyer(request,
             target,
             options=(),
             channel_credentials=None,
@@ -592,9 +640,9 @@ class CustomerDB(object):
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/customerdbproto.CustomerDB/GetSellerRating',
-            customer__db__pb2.GetSellerRatingRequest.SerializeToString,
-            customer__db__pb2.GetSellerRatingResponse.FromString,
+            '/customerdbproto.CustomerDB/GetSellerRatingForBuyer',
+            customer__db__pb2.GetSellerRatingForBuyerRequest.SerializeToString,
+            customer__db__pb2.GetSellerRatingForBuyerResponse.FromString,
             options,
             channel_credentials,
             insecure,
@@ -649,6 +697,87 @@ class CustomerDB(object):
             '/customerdbproto.CustomerDB/MakePurchase',
             customer__db__pb2.UserRequest.SerializeToString,
             customer__db__pb2.MakePurchaseResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def GetSellerRating(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/customerdbproto.CustomerDB/GetSellerRating',
+            customer__db__pb2.UserRequest.SerializeToString,
+            customer__db__pb2.GetSellerRatingResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def RegisterItemForSale(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/customerdbproto.CustomerDB/RegisterItemForSale',
+            customer__db__pb2.RegisterItemForSaleRequest.SerializeToString,
+            customer__db__pb2.RegisterItemForSaleResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def ChangeItemPrice(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/customerdbproto.CustomerDB/ChangeItemPrice',
+            customer__db__pb2.ChangeItemPriceRequest.SerializeToString,
+            customer__db__pb2.ChangeItemPriceResponse.FromString,
             options,
             channel_credentials,
             insecure,

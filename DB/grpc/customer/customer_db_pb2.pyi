@@ -230,7 +230,7 @@ class ProvideFeedbackResponse(_message.Message):
     message: str
     def __init__(self, status: _Optional[_Union[Status, str]] = ..., message: _Optional[str] = ...) -> None: ...
 
-class GetSellerRatingRequest(_message.Message):
+class GetSellerRatingForBuyerRequest(_message.Message):
     __slots__ = ("session_id", "seller_id")
     SESSION_ID_FIELD_NUMBER: _ClassVar[int]
     SELLER_ID_FIELD_NUMBER: _ClassVar[int]
@@ -238,7 +238,7 @@ class GetSellerRatingRequest(_message.Message):
     seller_id: int
     def __init__(self, session_id: _Optional[int] = ..., seller_id: _Optional[int] = ...) -> None: ...
 
-class GetSellerRatingResponse(_message.Message):
+class GetSellerRatingForBuyerResponse(_message.Message):
     __slots__ = ("status", "message", "thumbs_up", "thumbs_down")
     STATUS_FIELD_NUMBER: _ClassVar[int]
     MESSAGE_FIELD_NUMBER: _ClassVar[int]
@@ -261,6 +261,64 @@ class GetBuyerPurchasesResponse(_message.Message):
     def __init__(self, status: _Optional[_Union[Status, str]] = ..., message: _Optional[str] = ..., purchases: _Optional[_Iterable[str]] = ...) -> None: ...
 
 class MakePurchaseResponse(_message.Message):
+    __slots__ = ("status", "message")
+    STATUS_FIELD_NUMBER: _ClassVar[int]
+    MESSAGE_FIELD_NUMBER: _ClassVar[int]
+    status: Status
+    message: str
+    def __init__(self, status: _Optional[_Union[Status, str]] = ..., message: _Optional[str] = ...) -> None: ...
+
+class GetSellerRatingResponse(_message.Message):
+    __slots__ = ("status", "message", "thumbs_up", "thumbs_down")
+    STATUS_FIELD_NUMBER: _ClassVar[int]
+    MESSAGE_FIELD_NUMBER: _ClassVar[int]
+    THUMBS_UP_FIELD_NUMBER: _ClassVar[int]
+    THUMBS_DOWN_FIELD_NUMBER: _ClassVar[int]
+    status: Status
+    message: str
+    thumbs_up: int
+    thumbs_down: int
+    def __init__(self, status: _Optional[_Union[Status, str]] = ..., message: _Optional[str] = ..., thumbs_up: _Optional[int] = ..., thumbs_down: _Optional[int] = ...) -> None: ...
+
+class RegisterItemForSaleRequest(_message.Message):
+    __slots__ = ("session_id", "name", "category", "keywords", "condition", "sale_price", "quantity")
+    SESSION_ID_FIELD_NUMBER: _ClassVar[int]
+    NAME_FIELD_NUMBER: _ClassVar[int]
+    CATEGORY_FIELD_NUMBER: _ClassVar[int]
+    KEYWORDS_FIELD_NUMBER: _ClassVar[int]
+    CONDITION_FIELD_NUMBER: _ClassVar[int]
+    SALE_PRICE_FIELD_NUMBER: _ClassVar[int]
+    QUANTITY_FIELD_NUMBER: _ClassVar[int]
+    session_id: int
+    name: str
+    category: int
+    keywords: _containers.RepeatedScalarFieldContainer[str]
+    condition: int
+    sale_price: float
+    quantity: int
+    def __init__(self, session_id: _Optional[int] = ..., name: _Optional[str] = ..., category: _Optional[int] = ..., keywords: _Optional[_Iterable[str]] = ..., condition: _Optional[int] = ..., sale_price: _Optional[float] = ..., quantity: _Optional[int] = ...) -> None: ...
+
+class RegisterItemForSaleResponse(_message.Message):
+    __slots__ = ("status", "message", "item_id")
+    STATUS_FIELD_NUMBER: _ClassVar[int]
+    MESSAGE_FIELD_NUMBER: _ClassVar[int]
+    ITEM_ID_FIELD_NUMBER: _ClassVar[int]
+    status: Status
+    message: str
+    item_id: int
+    def __init__(self, status: _Optional[_Union[Status, str]] = ..., message: _Optional[str] = ..., item_id: _Optional[int] = ...) -> None: ...
+
+class ChangeItemPriceRequest(_message.Message):
+    __slots__ = ("session_id", "item_id", "sale_price")
+    SESSION_ID_FIELD_NUMBER: _ClassVar[int]
+    ITEM_ID_FIELD_NUMBER: _ClassVar[int]
+    SALE_PRICE_FIELD_NUMBER: _ClassVar[int]
+    session_id: int
+    item_id: int
+    sale_price: float
+    def __init__(self, session_id: _Optional[int] = ..., item_id: _Optional[int] = ..., sale_price: _Optional[float] = ...) -> None: ...
+
+class ChangeItemPriceResponse(_message.Message):
     __slots__ = ("status", "message")
     STATUS_FIELD_NUMBER: _ClassVar[int]
     MESSAGE_FIELD_NUMBER: _ClassVar[int]
