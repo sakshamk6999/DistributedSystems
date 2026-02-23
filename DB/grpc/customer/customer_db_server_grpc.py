@@ -27,7 +27,7 @@ pool_customer = sqlalchemy.create_engine(
 
 # --- New Product DB Setup ---
 # Replace with your actual Product Instance connection name
-INSTANCE_PRODUCT = "distributedsystemsassi:us-central1:product-db-instance" 
+INSTANCE_PRODUCT = "distributedsystemsassi:us-central1:product-db-1" 
 pool_product = sqlalchemy.create_engine(
     "mysql+pymysql://",
     creator=lambda: connector.connect(
