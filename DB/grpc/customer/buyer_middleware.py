@@ -43,8 +43,7 @@ async def shutdown():
 # --- Helpers ---
 def proto_to_dict(response):
     return MessageToDict(response, 
-                         preserving_proto_field_name=True, 
-                         including_default_value_fields=True)
+                         preserving_proto_field_name=True)
 
 async def handle_grpc_call(rpc_method, proto_request):
     try:
