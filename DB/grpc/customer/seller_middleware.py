@@ -86,7 +86,7 @@ async def login():
 
 
 @app.route('/seller/rating', methods=['POST'])
-async def login():
+async def seller_rating():
     data = await request.get_json()
     return await handle_grpc_call(
         grpc_manager.stub.GetSellerRating,
@@ -97,7 +97,7 @@ async def login():
 
 
 @app.route('/item/register', methods=['POST'])
-async def login():
+async def register_item():
     data = await request.get_json()
     return await handle_grpc_call(
         grpc_manager.stub.RegisterItemForSale,
@@ -114,7 +114,7 @@ async def login():
 
 
 @app.route('/item/change_price', methods=['POST'])
-async def login():
+async def price_change():
     data = await request.get_json()
     return await handle_grpc_call(
         grpc_manager.stub.ChangeItemPrice,
