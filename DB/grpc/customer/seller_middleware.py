@@ -91,7 +91,7 @@ async def seller_rating():
     return await handle_grpc_call(
         grpc_manager.stub.GetSellerRating,
         customer_db_pb2.UserRequest(
-            session_id=data.get("session_id")
+            session_id=int(data.get("session_id"))
         )
     )
 
@@ -104,11 +104,11 @@ async def register_item():
         customer_db_pb2.RegisterItemForSaleRequest(
             session_id=data.get("session_id"),
             name=data.get("name"),
-            category=data.get("category"),
+            category=int(data.get("category")),
             keywords=data.get("keywords"),
-            condition=data.get("condition"),
-            sale_price=data.get("sale_price"),
-            quantity=data.get("quantity")
+            condition=int(data.get("condition")),
+            sale_price=float(data.get("sale_price")),
+            quantity=int(data.get("quantity"))
         )
     )
 
@@ -119,9 +119,9 @@ async def price_change():
     return await handle_grpc_call(
         grpc_manager.stub.ChangeItemPrice,
         customer_db_pb2.ChangeItemPriceRequest(
-            session_id=data.get("session_id"),
-            item_id=data.get("item_id"),
-            sale_price=data.get("sale_price")
+            session_id=int(data.get("session_id")),
+            item_id=int(data.get("item_id")),
+            sale_price=float(data.get("sale_price"))
         )
     )
 

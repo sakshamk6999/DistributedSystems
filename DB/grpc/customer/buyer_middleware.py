@@ -100,7 +100,7 @@ async def product_search():
         customer_db_pb2.ProductSearchRequest(
             category=int(category) if category else 0, 
             keywords=keywords,
-            session_id=session_id
+            session_id=int(session_id)
         )
     )
 
@@ -123,7 +123,7 @@ async def add_to_cart():
         customer_db_pb2.AddItemToCartRequest(
             item_id=str(data.get("item_id")),
             item_quantity=int(data.get("item_quantity", 1)),
-            session_id=data.get("session_id")
+            session_id=int(data.get("session_id"))
         )
     )
 
@@ -134,7 +134,7 @@ async def remove_from_cart():
         grpc_manager.stub.RemoveItemFromCart,
         customer_db_pb2.RemoveItemFromCartRequest(
             item_id=str(data.get("item_id")),
-            session_id=data.get("session_id")
+            session_id=int(data.get("session_id"))
         )
     )
 
@@ -144,7 +144,7 @@ async def display_cart():
     # Note: Using UserRequest as per your gRPC definition
     return await handle_grpc_call(
         grpc_manager.stub.DisplayCart,
-        customer_db_pb2.UserRequest(session_id=data.get("session_id"))
+        customer_db_pb2.UserRequest(session_id=int(data.get("session_id")))
     )
 
 @app.route('/cart/save', methods=['POST'])
@@ -152,7 +152,7 @@ async def save_cart():
     data = await request.get_json()
     return await handle_grpc_call(
         grpc_manager.stub.SaveCart,
-        customer_db_pb2.UserRequest(session_id=data.get("session_id"))
+        customer_db_pb2.UserRequest(session_id=int(data.get("session_id")))
     )
 
 @app.route('/cart/clear', methods=['POST'])
@@ -160,7 +160,7 @@ async def clear_cart():
     data = await request.get_json()
     return await handle_grpc_call(
         grpc_manager.stub.ClearCart,
-        customer_db_pb2.UserRequest(session_id=data.get("session_id"))
+        customer_db_pb2.UserRequest(session_id=int(data.get("session_id")))
     )
 
 @app.route('/cart/purchase', methods=['POST'])
@@ -187,7 +187,7 @@ async def make_purchase():
             # 3. Call the gRPC Service to finalize the purchase
             return await handle_grpc_call(
                 grpc_manager.stub.MakePurchase,
-                customer_db_pb2.UserRequest(session_id=session_id)
+                customer_db_pb2.UserRequest(session_id=int(session_id))
             )
         else:
             # Bank returned "no" (10% chance)

@@ -98,7 +98,7 @@ async def handle_common_request(client: httpx.AsyncClient, args, command):
         'session_id': current_session['session_id']
     }
 
-    print
+    # print
     response = await client.post(f"{BASE_URL}{ACTION_MAP[command]}", json=params)
     res_object = response.json()
 
