@@ -96,7 +96,7 @@ async def handle_product_search(client: httpx.AsyncClient, args):
         'session_id': current_session['session_id']
     }
     
-    response = await client.get(f"{BASE_URL}/products/search", params=params)
+    response = await client.post(f"{BASE_URL}/products/search", json=params)
     res_object = response.json()
 
     if response.status_code == 200:
