@@ -35,64 +35,73 @@ pool_product = sqlalchemy.create_engine(
     ),
 )
 
-def setup_databses():
+def setup_databases():
+    # --- Setup Customer DB ---
     with pool_customer.begin() as conn:
+        print("Initializing Customer Database tables...")
+        
+        # Split into individual execute calls
+        tables = [
+            '''CREATE TABLE IF NOT EXISTS sellers (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                username VARCHAR(32) NOT NULL UNIQUE,
+                password VARCHAR(32) NOT NULL,
+                name VARCHAR(32) NOT NULL,
+                thumbs_up INT DEFAULT 0,
+                thumbs_down INT DEFAULT 0,
+                items_sold INT DEFAULT 0
+            )''',
+            '''CREATE TABLE IF NOT EXISTS buyers (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                username VARCHAR(32) NOT NULL UNIQUE,
+                password VARCHAR(32) NOT NULL,
+                name VARCHAR(32) NOT NULL
+            )''',
+            '''CREATE TABLE IF NOT EXISTS purchases (
+                purchase_id INT AUTO_INCREMENT PRIMARY KEY,
+                buyer_id INT NOT NULL,
+                item_id INT NOT NULL,
+                quantity INT NOT NULL,
+                purchase_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )''',
+            '''CREATE TABLE IF NOT EXISTS buyer_cart (
+              user_id INT PRIMARY KEY,
+              items VARCHAR(255)
+            )''',
+            '''CREATE TABLE IF NOT EXISTS session_cart (
+              session_id INT AUTO_INCREMENT PRIMARY KEY,
+              user_id INT NOT NULL,
+              items VARCHAR(255)
+            )''',
+            '''CREATE TABLE IF NOT EXISTS seller_session (
+              session_id INT AUTO_INCREMENT PRIMARY KEY,
+              seller_id INT NOT NULL
+            )'''
+        ]
+        
+        for table_sql in tables:
+            conn.execute(sqlalchemy.text(table_sql))
+        print("Customer DB initialization complete.")
+
+    # --- Setup Product DB ---
+    # Ensure this uses pool_product!
+    with pool_product.begin() as conn:
+        print("Initializing Product Database tables...")
         conn.execute(sqlalchemy.text('''
-CREATE TABLE IF NOT EXISTS sellers (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    username VARCHAR(32) NOT NULL UNIQUE,
-    password VARCHAR(32) NOT NULL,
-    name VARCHAR(32) NOT NULL,
-    thumbs_up INT DEFAULT 0,
-    thumbs_down INT DEFAULT 0,
-    items_sold INT DEFAULT 0
-);
-
-CREATE TABLE IF NOT EXISTS buyers (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    username VARCHAR(32) NOT NULL UNIQUE,
-    password VARCHAR(32) NOT NULL,
-    name VARCHAR(32) NOT NULL
-);
-
-CREATE TABLE IF NOT EXISTS purchases (
-    buyer_id INT PRIMARY KEY,
-    item_id INT,
-    quantity INT
-)
-
-CREATE TABLE IF NOT EXISTS buyer_cart (
-  user_id INT PRIMARY KEY,
-  items VARCHAR(255)
-);
-
-CREATE TABLE IF NOT EXISTS session_cart (
-  session_id INT AUTO_INCREMENT PRIMARY KEY,
-  user_id INT NOT NULL,
-  items VARCHAR(255)
-);
-
-CREATE TABLE IF NOT EXISTS seller_session (
-  session_id INT AUTO_INCREMENT PRIMARY KEY,
-  seller_id INT NOT NULL
-);
+            CREATE TABLE IF NOT EXISTS items (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                seller_id INT NOT NULL,
+                category INT NOT NULL,
+                name VARCHAR(32) NOT NULL,
+                keywords VARCHAR(255),
+                condition_val INT NOT NULL,
+                sale_price FLOAT NOT NULL,
+                quantity INT NOT NULL,
+                thumbs_up INT DEFAULT 0,
+                thumbs_down INT DEFAULT 0
+            )
         '''))
-
-    with pool_customer.begin() as conn:
-        conn.execute(sqlalchemy.text('''
-CREATE TABLE IF NOT EXISTS items (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    seller_id INT NOT NULL,
-    category INT NOT NULL,
-    name VARCHAR(32) NOT NULL,
-    keywords VARCHAR(255),
-    condition_val INT NOT NULL,
-    sale_price FLOAT NOT NULL,
-    quantity INT NOT NULL,
-    thumbs_up INT DEFAULT 0,
-    thumbs_down INT DEFAULT 0
-);
-'''))
+        print("Product DB initialization complete.")
 
 class BuyerDBService(customer_db_pb2_grpc.CustomerDBServicer):
     
