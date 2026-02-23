@@ -100,6 +100,11 @@ class CustomerDBStub(object):
                 request_serializer=customer__db__pb2.UserRequest.SerializeToString,
                 response_deserializer=customer__db__pb2.GetBuyerPurchasesResponse.FromString,
                 _registered_method=True)
+        self.MakePurchase = channel.unary_unary(
+                '/customerdbproto.CustomerDB/MakePurchase',
+                request_serializer=customer__db__pb2.UserRequest.SerializeToString,
+                response_deserializer=customer__db__pb2.MakePurchaseResponse.FromString,
+                _registered_method=True)
 
 
 class CustomerDBServicer(object):
@@ -186,6 +191,12 @@ class CustomerDBServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def MakePurchase(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
 
 def add_CustomerDBServicer_to_server(servicer, server):
     rpc_method_handlers = {
@@ -253,6 +264,11 @@ def add_CustomerDBServicer_to_server(servicer, server):
                     servicer.GetBuyerPurchases,
                     request_deserializer=customer__db__pb2.UserRequest.FromString,
                     response_serializer=customer__db__pb2.GetBuyerPurchasesResponse.SerializeToString,
+            ),
+            'MakePurchase': grpc.unary_unary_rpc_method_handler(
+                    servicer.MakePurchase,
+                    request_deserializer=customer__db__pb2.UserRequest.FromString,
+                    response_serializer=customer__db__pb2.MakePurchaseResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -606,6 +622,33 @@ class CustomerDB(object):
             '/customerdbproto.CustomerDB/GetBuyerPurchases',
             customer__db__pb2.UserRequest.SerializeToString,
             customer__db__pb2.GetBuyerPurchasesResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def MakePurchase(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/customerdbproto.CustomerDB/MakePurchase',
+            customer__db__pb2.UserRequest.SerializeToString,
+            customer__db__pb2.MakePurchaseResponse.FromString,
             options,
             channel_credentials,
             insecure,

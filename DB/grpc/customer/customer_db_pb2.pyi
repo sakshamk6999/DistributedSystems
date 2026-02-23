@@ -259,3 +259,11 @@ class GetBuyerPurchasesResponse(_message.Message):
     message: str
     purchases: _containers.RepeatedScalarFieldContainer[str]
     def __init__(self, status: _Optional[_Union[Status, str]] = ..., message: _Optional[str] = ..., purchases: _Optional[_Iterable[str]] = ...) -> None: ...
+
+class MakePurchaseResponse(_message.Message):
+    __slots__ = ("status", "message")
+    STATUS_FIELD_NUMBER: _ClassVar[int]
+    MESSAGE_FIELD_NUMBER: _ClassVar[int]
+    status: Status
+    message: str
+    def __init__(self, status: _Optional[_Union[Status, str]] = ..., message: _Optional[str] = ...) -> None: ...
