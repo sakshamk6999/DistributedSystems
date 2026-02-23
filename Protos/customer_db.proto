@@ -79,7 +79,7 @@ message UserResponse {
 
 message ProductSearchRequest {
     int32 session_id = 1;
-    string category = 2;
+    int32 category = 2;
     repeated string keywords = 3;
 }
 

@@ -76,9 +76,9 @@ class ProductSearchRequest(_message.Message):
     CATEGORY_FIELD_NUMBER: _ClassVar[int]
     KEYWORDS_FIELD_NUMBER: _ClassVar[int]
     session_id: int
-    category: str
+    category: int
     keywords: _containers.RepeatedScalarFieldContainer[str]
-    def __init__(self, session_id: _Optional[int] = ..., category: _Optional[str] = ..., keywords: _Optional[_Iterable[str]] = ...) -> None: ...
+    def __init__(self, session_id: _Optional[int] = ..., category: _Optional[int] = ..., keywords: _Optional[_Iterable[str]] = ...) -> None: ...
 
 class ProductSearchResponse(_message.Message):
     __slots__ = ("seller_id", "category", "name", "keywords", "condition_val", "sale_price", "quantity", "thumbs_up", "thumbs_down", "status")
