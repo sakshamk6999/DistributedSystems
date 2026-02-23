@@ -15,9 +15,14 @@ CREATE TABLE IF NOT EXISTS buyers (
     id INT AUTO_INCREMENT PRIMARY KEY,
     username VARCHAR(32) NOT NULL UNIQUE,
     password VARCHAR(32) NOT NULL,
-    name VARCHAR(32) NOT NULL,
-    purchases VARCHAR(255)
+    name VARCHAR(32) NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS purchases (
+    buyer_id INT PRIMARY KEY,
+    item_id INT,
+    quantity INT
+)
 
 CREATE TABLE IF NOT EXISTS buyer_cart (
   user_id INT PRIMARY KEY,
