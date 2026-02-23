@@ -595,7 +595,7 @@ class BuyerDBService(customer_db_pb2_grpc.CustomerDBServicer):
 
 
 def serve():
-    server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
+    server = grpc.server(futures.ThreadPoolExecutor())
     customer_db_pb2_grpc.add_CustomerDBServicer_to_server(BuyerDBService(), server)
     # Important: Listen on [::] for cross-VM communication
     server.add_insecure_port("[::]:50051")

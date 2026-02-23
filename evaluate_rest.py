@@ -174,10 +174,10 @@ def main():
     ap.add_argument("--buyer_host", default="localhost")
     ap.add_argument("--buyer_port", type=int, default=50000)
     ap.add_argument("--seller_host", default="localhost")
-    ap.add_argument("--seller_port", type=int, default=50001)
+    ap.add_argument("--seller_port", type=int, default=50000)
     ap.add_argument("--num_buyer", type=int, default=10)
     ap.add_argument("--num_seller", type=int, default=10)
-    ap.add_argument("--num_runs", type=int, default=2)
+    ap.add_argument("--num_runs", type=int, default=10)
     ap.add_argument("--num_calls_per_run", type=int, default=5)
     run_benchmark(ap.parse_args())
 
