@@ -463,5 +463,5 @@ def serve():
     server.wait_for_termination()
 
 if __name__ == "__main__":
-    setup_databses()
+    setup_databases()
     serve()
