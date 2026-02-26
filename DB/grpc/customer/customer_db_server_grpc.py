@@ -109,7 +109,7 @@ class BuyerDBService(customer_db_pb2_grpc.CustomerDBServicer):
     def Register(self, request, context):
         try:
             with pool_customer.begin() as conn:
-
+                print("params received register", request)
                 if request.customer_type == customer_db_pb2.CustomerType.BUYER:
                     # Insert Buyer
                     result = conn.execute(
@@ -150,6 +150,7 @@ class BuyerDBService(customer_db_pb2_grpc.CustomerDBServicer):
 
     def Login(self, request, context):
         try:
+            print("params received login", request)
             with pool_customer.begin() as conn:
                 if request.customer_type == customer_db_pb2.CustomerType.BUYER:
                     # Fetch User using mappings to access by key
@@ -204,6 +205,7 @@ class BuyerDBService(customer_db_pb2_grpc.CustomerDBServicer):
 
     def Logout(self, request, context):
         try:
+            print("params received logout", request)
             with pool_customer.begin() as conn:
                 if request.customer_type == customer_db_pb2.CustomerType.BUYER:
                     conn.execute(
@@ -230,6 +232,7 @@ class BuyerDBService(customer_db_pb2_grpc.CustomerDBServicer):
 
     def ProductSearch(self, request, context):
         try:
+            print("params received product search", request)
             with pool_product.connect() as conn:
                 # Core dynamic query logic
                 query_str = "SELECT * FROM items WHERE category=:cat AND quantity > 0"
@@ -244,7 +247,7 @@ class BuyerDBService(customer_db_pb2_grpc.CustomerDBServicer):
                         conditions.append(f"keywords LIKE :{key}")
                         params[key] = f"%{kw}%"
                     query_str += " AND (" + " OR ".join(conditions) + ")"
-
+                print("query string ", query_str)
                 result = conn.execute(sqlalchemy.text(query_str), params).mappings().all()
                 
                 if not result:
@@ -263,9 +266,10 @@ class BuyerDBService(customer_db_pb2_grpc.CustomerDBServicer):
             return customer_db_pb2.ProductSearchResponse(status=customer_db_pb2.Status.ERROR, message=str(e))
 
     def ClearCart(self, request, context):
+        
         try:
             with pool_customer.begin() as conn:
-
+                print("params received clear cart", request)
                 res = conn.execute(
                     sqlalchemy.text("SELECT items FROM session_cart WHERE session_id = :sid"),
                     {"sid": request.session_id}
@@ -283,6 +287,7 @@ class BuyerDBService(customer_db_pb2_grpc.CustomerDBServicer):
     def RemoveItemFromCart(self, request, context):
         try:
             with pool_customer.begin() as conn:
+                print("params received remove item", request)
                 # 1. Fetch current items in the session
                 res = conn.execute(
                     sqlalchemy.text("SELECT items FROM session_cart WHERE session_id = :sid"),
@@ -325,6 +330,7 @@ class BuyerDBService(customer_db_pb2_grpc.CustomerDBServicer):
     def SaveCart(self, request, context):
         try:
             with pool_customer.begin() as conn:
+                print("params received save cart", request)
                 # 1. Get items from the active session
                 session_res = conn.execute(
                     sqlalchemy.text("SELECT user_id, items FROM session_cart WHERE session_id = :sid"),
@@ -356,6 +362,7 @@ class BuyerDBService(customer_db_pb2_grpc.CustomerDBServicer):
     def DisplayCart(self, request, context):
         try:
             with pool_customer.connect() as conn: # connect() is enough for SELECT
+                print("params received display cart", request)
                 res = conn.execute(
                     sqlalchemy.text("SELECT items FROM session_cart WHERE session_id = :sid"),
                     {"sid": request.session_id}
@@ -393,6 +400,7 @@ class BuyerDBService(customer_db_pb2_grpc.CustomerDBServicer):
         try:
             # Connect to Product DB for read-only query
             with pool_product.connect() as conn:
+                print("params received get item", request)
                 result = conn.execute(
                     sqlalchemy.text("SELECT * FROM items WHERE id = :id"),
                     {"id": request.item_id}
@@ -419,6 +427,7 @@ class BuyerDBService(customer_db_pb2_grpc.CustomerDBServicer):
         try:
             # 1. Verify availability in Product DB
             with pool_product.connect() as prod_conn:
+                print("params received add item cart", request)
                 product = prod_conn.execute(
                     sqlalchemy.text("SELECT id, quantity FROM items WHERE id = :id AND quantity >= :qty"),
                     {"id": request.item_id, "qty": request.item_quantity}
@@ -470,6 +479,7 @@ class BuyerDBService(customer_db_pb2_grpc.CustomerDBServicer):
         try:
             # 1. Fetch Session Data (Need user_id and items)
             with pool_customer.connect() as conn:
+                print("params received make purchase", request)
                 res = conn.execute(
                     sqlalchemy.text("SELECT user_id, items FROM session_cart WHERE session_id = :sid"),
                     {"sid": request.session_id}
@@ -532,6 +542,7 @@ class BuyerDBService(customer_db_pb2_grpc.CustomerDBServicer):
     def GetSellerRating(self, request, context):
         try:
             with pool_customer.connect() as conn:
+                print("params received seller rating", request)
                 # 1. Verify seller session and get seller_id
                 session_res = conn.execute(
                     sqlalchemy.text("SELECT seller_id FROM seller_session WHERE session_id = :sid"),
@@ -566,6 +577,7 @@ class BuyerDBService(customer_db_pb2_grpc.CustomerDBServicer):
         try:
             # 1. Identify seller via Customer DB
             with pool_customer.connect() as cust_conn:
+                print("params received register item", request)
                 seller_res = cust_conn.execute(
                     sqlalchemy.text("SELECT seller_id FROM seller_session WHERE session_id = :sid"),
                     {"sid": request.session_id}
@@ -578,7 +590,7 @@ class BuyerDBService(customer_db_pb2_grpc.CustomerDBServicer):
                     )
                 
                 seller_id = seller_res['seller_id']
-
+                
             # 2. Insert item into Product DB
             with pool_product.begin() as prod_conn:
                 # Convert list of keywords to comma-separated string
