@@ -84,6 +84,18 @@ async def login():
         )
     )
 
+@app.route('/logout', methods=['POST'])
+async def login():
+    data = await request.get_json()
+    return await handle_grpc_call(
+        grpc_manager.stub.Logout,
+        customer_db_pb2.LogoutRequest(
+            session_id=int(data.get("session_id")),
+            customer_type=customer_db_pb2.CustomerType.BUYER
+        )
+    )
+
+
 # --- Product Routes ---
 
 @app.route('/products/search', methods=['POST'])
@@ -91,10 +103,10 @@ async def product_search():
     data = await request.get_json()
     category = data.get("category")
     keywords = data.get("keywords")
-    print("request", data)
+    # print("request", data)
     # Using Authorization header as a fallback for session tracking on GETs
     session_id = data.get("session_id")
-    print("session_id", session_id)
+    # print("session_id", session_id)
     return await handle_grpc_call(
         grpc_manager.stub.ProductSearch,
         customer_db_pb2.ProductSearchRequest(
@@ -110,7 +122,7 @@ async def get_item():
     item_id = request.args.get("item_id")
     return await handle_grpc_call(
         grpc_manager.stub.GetItem,
-        customer_db_pb2.GetItemRequest(item_id=str(item_id))
+        customer_db_pb2.GetItemRequest(item_id=int(item_id), session_id=int(request.args.get("session_id")))
     )
 
 # --- Cart Routes ---
@@ -121,7 +133,7 @@ async def add_to_cart():
     return await handle_grpc_call(
         grpc_manager.stub.AddItemToCart,
         customer_db_pb2.AddItemToCartRequest(
-            item_id=str(data.get("item_id")),
+            item_id=int(data.get("item_id")),
             item_quantity=int(data.get("item_quantity", 1)),
             session_id=int(data.get("session_id"))
         )
@@ -133,7 +145,7 @@ async def remove_from_cart():
     return await handle_grpc_call(
         grpc_manager.stub.RemoveItemFromCart,
         customer_db_pb2.RemoveItemFromCartRequest(
-            item_id=str(data.get("item_id")),
+            item_id=int(data.get("item_id")),
             session_id=int(data.get("session_id"))
         )
     )

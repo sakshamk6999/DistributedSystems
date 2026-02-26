@@ -4,7 +4,6 @@ import grpc
 import warnings
 
 import customer_db_pb2 as customer__db__pb2
-from google.protobuf import wrappers_pb2 as google_dot_protobuf_dot_wrappers__pb2
 
 GRPC_GENERATED_VERSION = '1.78.1'
 GRPC_VERSION = grpc.__version__
@@ -47,13 +46,13 @@ class CustomerDBStub(object):
                 _registered_method=True)
         self.Logout = channel.unary_unary(
                 '/customerdbproto.CustomerDB/Logout',
-                request_serializer=customer__db__pb2.UserRequest.SerializeToString,
-                response_deserializer=google_dot_protobuf_dot_wrappers__pb2.BoolValue.FromString,
+                request_serializer=customer__db__pb2.LogoutRequest.SerializeToString,
+                response_deserializer=customer__db__pb2.UserResponse.FromString,
                 _registered_method=True)
         self.ProductSearch = channel.unary_unary(
                 '/customerdbproto.CustomerDB/ProductSearch',
                 request_serializer=customer__db__pb2.ProductSearchRequest.SerializeToString,
-                response_deserializer=customer__db__pb2.ProductSearchResponse.FromString,
+                response_deserializer=customer__db__pb2.ListProductResponse.FromString,
                 _registered_method=True)
         self.AddItemToCart = channel.unary_unary(
                 '/customerdbproto.CustomerDB/AddItemToCart',
@@ -245,13 +244,13 @@ def add_CustomerDBServicer_to_server(servicer, server):
             ),
             'Logout': grpc.unary_unary_rpc_method_handler(
                     servicer.Logout,
-                    request_deserializer=customer__db__pb2.UserRequest.FromString,
-                    response_serializer=google_dot_protobuf_dot_wrappers__pb2.BoolValue.SerializeToString,
+                    request_deserializer=customer__db__pb2.LogoutRequest.FromString,
+                    response_serializer=customer__db__pb2.UserResponse.SerializeToString,
             ),
             'ProductSearch': grpc.unary_unary_rpc_method_handler(
                     servicer.ProductSearch,
                     request_deserializer=customer__db__pb2.ProductSearchRequest.FromString,
-                    response_serializer=customer__db__pb2.ProductSearchResponse.SerializeToString,
+                    response_serializer=customer__db__pb2.ListProductResponse.SerializeToString,
             ),
             'AddItemToCart': grpc.unary_unary_rpc_method_handler(
                     servicer.AddItemToCart,
@@ -398,8 +397,8 @@ class CustomerDB(object):
             request,
             target,
             '/customerdbproto.CustomerDB/Logout',
-            customer__db__pb2.UserRequest.SerializeToString,
-            google_dot_protobuf_dot_wrappers__pb2.BoolValue.FromString,
+            customer__db__pb2.LogoutRequest.SerializeToString,
+            customer__db__pb2.UserResponse.FromString,
             options,
             channel_credentials,
             insecure,
@@ -426,7 +425,7 @@ class CustomerDB(object):
             target,
             '/customerdbproto.CustomerDB/ProductSearch',
             customer__db__pb2.ProductSearchRequest.SerializeToString,
-            customer__db__pb2.ProductSearchResponse.FromString,
+            customer__db__pb2.ListProductResponse.FromString,
             options,
             channel_credentials,
             insecure,

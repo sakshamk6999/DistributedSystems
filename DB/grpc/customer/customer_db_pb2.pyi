@@ -1,4 +1,3 @@
-from google.protobuf import wrappers_pb2 as _wrappers_pb2
 from google.protobuf.internal import containers as _containers
 from google.protobuf.internal import enum_type_wrapper as _enum_type_wrapper
 from google.protobuf import descriptor as _descriptor
@@ -54,6 +53,14 @@ class LoginRequest(_message.Message):
     customer_type: CustomerType
     def __init__(self, username: _Optional[str] = ..., password: _Optional[str] = ..., customer_type: _Optional[_Union[CustomerType, str]] = ...) -> None: ...
 
+class LogoutRequest(_message.Message):
+    __slots__ = ("session_id", "customer_type")
+    SESSION_ID_FIELD_NUMBER: _ClassVar[int]
+    CUSTOMER_TYPE_FIELD_NUMBER: _ClassVar[int]
+    session_id: int
+    customer_type: CustomerType
+    def __init__(self, session_id: _Optional[int] = ..., customer_type: _Optional[_Union[CustomerType, str]] = ...) -> None: ...
+
 class UserRequest(_message.Message):
     __slots__ = ("session_id",)
     SESSION_ID_FIELD_NUMBER: _ClassVar[int]
@@ -81,7 +88,7 @@ class ProductSearchRequest(_message.Message):
     def __init__(self, session_id: _Optional[int] = ..., category: _Optional[int] = ..., keywords: _Optional[_Iterable[str]] = ...) -> None: ...
 
 class ProductSearchResponse(_message.Message):
-    __slots__ = ("seller_id", "category", "name", "keywords", "condition_val", "sale_price", "quantity", "thumbs_up", "thumbs_down", "status")
+    __slots__ = ("seller_id", "category", "name", "keywords", "condition_val", "sale_price", "quantity", "thumbs_up", "thumbs_down")
     SELLER_ID_FIELD_NUMBER: _ClassVar[int]
     CATEGORY_FIELD_NUMBER: _ClassVar[int]
     NAME_FIELD_NUMBER: _ClassVar[int]
@@ -91,7 +98,6 @@ class ProductSearchResponse(_message.Message):
     QUANTITY_FIELD_NUMBER: _ClassVar[int]
     THUMBS_UP_FIELD_NUMBER: _ClassVar[int]
     THUMBS_DOWN_FIELD_NUMBER: _ClassVar[int]
-    STATUS_FIELD_NUMBER: _ClassVar[int]
     seller_id: int
     category: int
     name: str
@@ -101,8 +107,17 @@ class ProductSearchResponse(_message.Message):
     quantity: int
     thumbs_up: int
     thumbs_down: int
+    def __init__(self, seller_id: _Optional[int] = ..., category: _Optional[int] = ..., name: _Optional[str] = ..., keywords: _Optional[_Iterable[str]] = ..., condition_val: _Optional[int] = ..., sale_price: _Optional[float] = ..., quantity: _Optional[int] = ..., thumbs_up: _Optional[int] = ..., thumbs_down: _Optional[int] = ...) -> None: ...
+
+class ListProductResponse(_message.Message):
+    __slots__ = ("items", "status", "message")
+    ITEMS_FIELD_NUMBER: _ClassVar[int]
+    STATUS_FIELD_NUMBER: _ClassVar[int]
+    MESSAGE_FIELD_NUMBER: _ClassVar[int]
+    items: _containers.RepeatedCompositeFieldContainer[ProductSearchResponse]
     status: Status
-    def __init__(self, seller_id: _Optional[int] = ..., category: _Optional[int] = ..., name: _Optional[str] = ..., keywords: _Optional[_Iterable[str]] = ..., condition_val: _Optional[int] = ..., sale_price: _Optional[float] = ..., quantity: _Optional[int] = ..., thumbs_up: _Optional[int] = ..., thumbs_down: _Optional[int] = ..., status: _Optional[_Union[Status, str]] = ...) -> None: ...
+    message: str
+    def __init__(self, items: _Optional[_Iterable[_Union[ProductSearchResponse, _Mapping]]] = ..., status: _Optional[_Union[Status, str]] = ..., message: _Optional[str] = ...) -> None: ...
 
 class AddItemToCartRequest(_message.Message):
     __slots__ = ("item_id", "quantity", "session_id")
@@ -130,9 +145,8 @@ class GetItemRequest(_message.Message):
     item_id: int
     def __init__(self, session_id: _Optional[int] = ..., item_id: _Optional[int] = ...) -> None: ...
 
-class GetItemResponse(_message.Message):
-    __slots__ = ("session_id", "item_id", "seller_id", "category", "name", "keywords", "condition", "sale_price", "quantity", "thumbs_up", "thumbs_down")
-    SESSION_ID_FIELD_NUMBER: _ClassVar[int]
+class ItemType(_message.Message):
+    __slots__ = ("item_id", "seller_id", "category", "name", "keywords", "condition", "sale_price", "quantity", "thumbs_up", "thumbs_down")
     ITEM_ID_FIELD_NUMBER: _ClassVar[int]
     SELLER_ID_FIELD_NUMBER: _ClassVar[int]
     CATEGORY_FIELD_NUMBER: _ClassVar[int]
@@ -143,7 +157,6 @@ class GetItemResponse(_message.Message):
     QUANTITY_FIELD_NUMBER: _ClassVar[int]
     THUMBS_UP_FIELD_NUMBER: _ClassVar[int]
     THUMBS_DOWN_FIELD_NUMBER: _ClassVar[int]
-    session_id: int
     item_id: int
     seller_id: int
     category: int
@@ -154,7 +167,17 @@ class GetItemResponse(_message.Message):
     quantity: int
     thumbs_up: int
     thumbs_down: int
-    def __init__(self, session_id: _Optional[int] = ..., item_id: _Optional[int] = ..., seller_id: _Optional[int] = ..., category: _Optional[int] = ..., name: _Optional[str] = ..., keywords: _Optional[str] = ..., condition: _Optional[int] = ..., sale_price: _Optional[float] = ..., quantity: _Optional[int] = ..., thumbs_up: _Optional[int] = ..., thumbs_down: _Optional[int] = ...) -> None: ...
+    def __init__(self, item_id: _Optional[int] = ..., seller_id: _Optional[int] = ..., category: _Optional[int] = ..., name: _Optional[str] = ..., keywords: _Optional[str] = ..., condition: _Optional[int] = ..., sale_price: _Optional[float] = ..., quantity: _Optional[int] = ..., thumbs_up: _Optional[int] = ..., thumbs_down: _Optional[int] = ...) -> None: ...
+
+class GetItemResponse(_message.Message):
+    __slots__ = ("status", "message", "item")
+    STATUS_FIELD_NUMBER: _ClassVar[int]
+    MESSAGE_FIELD_NUMBER: _ClassVar[int]
+    ITEM_FIELD_NUMBER: _ClassVar[int]
+    status: Status
+    message: str
+    item: ItemType
+    def __init__(self, status: _Optional[_Union[Status, str]] = ..., message: _Optional[str] = ..., item: _Optional[_Union[ItemType, _Mapping]] = ...) -> None: ...
 
 class RemoveItemFromCartRequest(_message.Message):
     __slots__ = ("session_id", "item_id")

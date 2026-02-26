@@ -8,7 +8,7 @@ For Seller: DB/grpc/customer/seller_middleware.py
 
 The gRPC protos: Protos/
 
-gRPC Servers: DB/grpc/customer
+gRPC Servers: DB/grpc/customer/customer_db_server_grpc.py
 
 Frontend CLI services: Frontend/
 

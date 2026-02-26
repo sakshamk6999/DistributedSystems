@@ -84,6 +84,17 @@ async def login():
         )
     )
 
+@app.route('/logout', methods=['POST'])
+async def login():
+    data = await request.get_json()
+    return await handle_grpc_call(
+        grpc_manager.stub.Logout,
+        customer_db_pb2.LogoutRequest(
+            session_id=int(data.get("session_id")),
+            customer_type=customer_db_pb2.CustomerType.SELLER
+        )
+    )
+
 
 @app.route('/seller/rating', methods=['POST'])
 async def seller_rating():
@@ -102,7 +113,7 @@ async def register_item():
     return await handle_grpc_call(
         grpc_manager.stub.RegisterItemForSale,
         customer_db_pb2.RegisterItemForSaleRequest(
-            session_id=data.get("session_id"),
+            session_id=int(data.get("session_id")),
             name=data.get("name"),
             category=int(data.get("category")),
             keywords=data.get("keywords"),

@@ -1,5 +1,4 @@
 syntax = "proto3";
-import "google/protobuf/wrappers.proto";
 option java_multiple_files = true;
 option java_package = "io.grpc.examples.customerdbproto";
 option java_outer_classname = "CustomerDBProto";
@@ -13,9 +12,9 @@ service CustomerDB {
     // Logins the user for the service
     rpc Login(LoginRequest) returns (UserResponse) {}
     // Logsout the user for the service
-    rpc Logout(UserRequest) returns (google.protobuf.BoolValue) {}
+    rpc Logout(LogoutRequest) returns (UserResponse) {}
 
-    rpc ProductSearch(ProductSearchRequest) returns (ProductSearchResponse) {}
+    rpc ProductSearch(ProductSearchRequest) returns (ListProductResponse) {}
 
     rpc AddItemToCart(AddItemToCartRequest) returns (AddItemToCartResponse) {}
 
@@ -70,7 +69,12 @@ message RegisterResponse {
 message LoginRequest {
     string username = 1;
     string password = 2;
-    CustomerType customer_type = 4;
+    CustomerType customer_type = 3;
+}
+
+message LogoutRequest {
+    int32 session_id = 1;
+    CustomerType customer_type = 3;
 }
 
 message UserRequest {
@@ -99,9 +103,13 @@ message ProductSearchResponse {
     int32 quantity = 7;
     int32 thumbs_up = 8;
     int32 thumbs_down = 9;
-    Status status = 10;
 }
 
+message ListProductResponse {
+    repeated ProductSearchResponse items = 1;
+    Status status = 2;
+    string message = 3;
+}
 message AddItemToCartRequest {
     int32 item_id = 1;
     int32 quantity = 2;
@@ -118,8 +126,7 @@ message GetItemRequest {
     int32 item_id = 2;
 }
 
-message GetItemResponse {
-    int32 session_id = 1;
+message ItemType {
     int32 item_id = 2;
     int32 seller_id = 3;
     int32 category = 4;
@@ -130,6 +137,13 @@ message GetItemResponse {
     int32 quantity = 9;
     int32 thumbs_up = 10;
     int32 thumbs_down = 11;
+}
+
+message GetItemResponse {
+    Status status = 1;
+    string message = 2;
+    ItemType item = 3;
+    
 }
 
 message RemoveItemFromCartRequest {

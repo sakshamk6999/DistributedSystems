@@ -1,2 +1,4 @@
 **/newEnv/**
 **/__pycache__/**
+
+.DS_Store

@@ -75,7 +75,8 @@ def setup_databases():
             )''',
             '''CREATE TABLE IF NOT EXISTS seller_session (
               session_id INT AUTO_INCREMENT PRIMARY KEY,
-              seller_id INT NOT NULL
+              seller_id INT NOT NULL,
+              items VARCHAR(255)
             )'''
         ]
         
@@ -126,7 +127,7 @@ class BuyerDBService(customer_db_pb2_grpc.CustomerDBServicer):
                     return customer_db_pb2.RegisterResponse(
                         status=customer_db_pb2.Status.OK, 
                         message=f"Buyer created: {request.username}", 
-                        id=user_id
+                        id=int(user_id)
                     )
                 else:
                     result = conn.execute(
@@ -134,10 +135,15 @@ class BuyerDBService(customer_db_pb2_grpc.CustomerDBServicer):
                         {"u": request.username, "p": request.password, "n": request.name}
                     )
                     user_id = result.lastrowid
+
+                    # conn.execute(
+                    #     sqlalchemy.text("INSERT INTO seller_session (seller, items) VALUES (:seller_id, "")"),
+                    #     {"seller_id": request.seller_id}
+                    # )
                     return customer_db_pb2.RegisterResponse(
                         status=customer_db_pb2.Status.OK, 
                         message=f"Seller created: {request.username}", 
-                        id=user_id
+                        id=int(user_id)
                     )
         except Exception as e:
             return customer_db_pb2.RegisterResponse(status=customer_db_pb2.Status.ERROR, message=str(e))
@@ -182,7 +188,7 @@ class BuyerDBService(customer_db_pb2_grpc.CustomerDBServicer):
                     if user_res:
                         # Create Session
                         session_res = conn.execute(
-                            sqlalchemy.text("INSERT INTO seller_session (seller_id) VALUES (:uid)"),
+                            sqlalchemy.text("INSERT INTO seller_session (seller_id, items) VALUES (:uid, "")"),
                             {"uid": user_res['id']}
                         )
                         
@@ -193,6 +199,32 @@ class BuyerDBService(customer_db_pb2_grpc.CustomerDBServicer):
                         )
                     else:
                         return customer_db_pb2.UserResponse(status=customer_db_pb2.Status.ERROR, message="Invalid Credentials")
+        except Exception as e:
+            return customer_db_pb2.UserResponse(status=customer_db_pb2.Status.ERROR, message=str(e))
+
+    def Logout(self, request, context):
+        try:
+            with pool_customer.begin() as conn:
+                if request.customer_type == customer_db_pb2.CustomerType.BUYER:
+                    conn.execute(
+                        sqlalchemy.text("DELETE FROM session_cart where session_id=:sid"),
+                        {"sid": request.session_id}
+                    )
+
+                    return customer_db_pb2.UserResponse(
+                        status=customer_db_pb2.Status.OK, 
+                        message="Logout Successful"
+                    )
+                else:
+                    conn.execute(
+                        sqlalchemy.text("DELETE FROM seller_session where session_id=:sid"),
+                        {"sid": request.session_id}
+                    )
+
+                    return customer_db_pb2.UserResponse(
+                        status=customer_db_pb2.Status.OK, 
+                        message="Logout Successful"
+                    )
         except Exception as e:
             return customer_db_pb2.UserResponse(status=customer_db_pb2.Status.ERROR, message=str(e))
 
@@ -219,20 +251,31 @@ class BuyerDBService(customer_db_pb2_grpc.CustomerDBServicer):
                     return customer_db_pb2.ProductSearchResponse(status=customer_db_pb2.Status.ERROR)
 
                 # Assuming you want the first item as per your original logic
-                item = dict(result[0])
-                item["keywords"] = item["keywords"].split(",") if item["keywords"] else []
+                items = []
+
+                for r in result:
+                    item = dict(r)
+                    item["keywords"] = item["keywords"].split(",") if item["keywords"] else []
+                    items.append(item)
                 
-                return customer_db_pb2.ProductSearchResponse(status=customer_db_pb2.Status.OK, **item)
+                return customer_db_pb2.ListProductResponse(status=customer_db_pb2.Status.OK, items=items)
         except Exception as e:
-            return customer_db_pb2.ProductSearchResponse(status=customer_db_pb2.Status.ERROR)
+            return customer_db_pb2.ProductSearchResponse(status=customer_db_pb2.Status.ERROR, message=str(e))
 
     def ClearCart(self, request, context):
         try:
             with pool_customer.begin() as conn:
-                conn.execute(
-                    sqlalchemy.text("UPDATE session_cart SET items='' WHERE session_id=:sid"),
+
+                res = conn.execute(
+                    sqlalchemy.text("SELECT items FROM session_cart WHERE session_id = :sid"),
                     {"sid": request.session_id}
+                ).mappings().fetchone()
+
+                conn.execute(
+                    sqlalchemy.text("UPDATE session_cart SET items='' WHERE user_id = :sid"),
+                    {"sid": res['user_id']}
                 )
+
                 return customer_db_pb2.ClearCartResponse(status=customer_db_pb2.Status.OK, message="Cart cleared")
         except Exception as e:
             return customer_db_pb2.ClearCartResponse(status=customer_db_pb2.Status.ERROR, message=str(e))
@@ -366,11 +409,11 @@ class BuyerDBService(customer_db_pb2_grpc.CustomerDBServicer):
                 else:
                     item_data["keywords"] = []
 
-                return customer_db_pb2.GetItemResponse(**item_data)
+                return customer_db_pb2.GetItemResponse(status=customer_db_pb2.Status.OK, item=item_data)
         except Exception as e:
             print(f"GetItem Error: {e}")
             # You might want to return an error status in your proto instead of an empty object
-            return customer_db_pb2.GetItemResponse()
+            return customer_db_pb2.GetItemResponse(status=customer_db_pb2.Status.OK, message=str(e))
         
     def AddItemToCart(self, request, context):
         try:
@@ -509,6 +552,7 @@ class BuyerDBService(customer_db_pb2_grpc.CustomerDBServicer):
 
                 return customer_db_pb2.GetSellerRatingResponse(
                     status=customer_db_pb2.Status.OK,
+                    message=f"User Rating Fetched",
                     thumbs_up=int(seller_res['thumbs_up']),
                     thumbs_down=int(seller_res['thumbs_down'])
                 )
@@ -569,7 +613,19 @@ class BuyerDBService(customer_db_pb2_grpc.CustomerDBServicer):
 
     def ChangeItemPrice(self, request, context):
         try:
-            # Note: In a real app, you'd check if request.session_id matches the item's seller_id here.
+
+            with pool_customer.connect() as cust_conn:
+                seller_res = cust_conn.execute(
+                    sqlalchemy.text("SELECT seller_id FROM seller_session WHERE session_id = :sid"),
+                    {"sid": request.session_id}
+                ).mappings().fetchone()
+
+                if not seller_res:
+                    return customer_db_pb2.StatusResponse(
+                        status=customer_db_pb2.Status.ERROR, 
+                        message="Unauthorized: Seller session not found"
+                    )
+                
             with pool_product.begin() as conn:
                 result = conn.execute(
                     sqlalchemy.text("UPDATE items SET sale_price = :price WHERE id = :id"),

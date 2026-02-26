@@ -70,9 +70,12 @@ async def handle_logout(client: httpx.AsyncClient):
         return
 
     try:
-        # Standard REST: session usually goes in headers or body
-        headers = {"Authorization": current_session['session_id']}
-        response = await client.post(f"{BASE_URL}/logout", headers=headers)
+
+        params = {
+            'session_id':  current_session['session_id']
+        }
+
+        response = await client.post(f"{BASE_URL}/logout", json=params)
         
         if response.status_code == 200:
             print("Logged out successfully.")
