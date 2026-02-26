@@ -155,14 +155,14 @@ class BuyerDBService(customer_db_pb2_grpc.CustomerDBServicer):
                 if request.customer_type == customer_db_pb2.CustomerType.BUYER:
                     # Fetch User using mappings to access by key
                     user_res = conn.execute(
-                        sqlalchemy.text("SELECT id, username FROM buyers WHERE username=:u AND password=:p"),
+                        sqlalchemy.text("SELECT * FROM buyers WHERE username=:u AND password=:p"),
                         {"u": request.username, "p": request.password}
                     ).mappings().fetchone()
 
                     if user_res:
                         # Fetch Cart
                         cart_res = conn.execute(
-                            sqlalchemy.text("SELECT items FROM buyer_cart WHERE user_id=:id"),
+                            sqlalchemy.text("SELECT * FROM buyer_cart WHERE user_id=:id"),
                             {"id": user_res['id']}
                         ).mappings().fetchone()
 
@@ -182,7 +182,7 @@ class BuyerDBService(customer_db_pb2_grpc.CustomerDBServicer):
                 else:
                     # Fetch User using mappings to access by key
                     user_res = conn.execute(
-                        sqlalchemy.text("SELECT id, username FROM sellers WHERE username=:u AND password=:p"),
+                        sqlalchemy.text("SELECT * FROM sellers WHERE username=:u AND password=:p"),
                         {"u": request.username, "p": request.password}
                     ).mappings().fetchone()
 
@@ -245,7 +245,7 @@ class BuyerDBService(customer_db_pb2_grpc.CustomerDBServicer):
                     for i, kw in enumerate(request.keywords):
                         key = f"kw{i}"
                         conditions.append(f"keywords LIKE :{key}")
-                        params[key] = f"%{kw}%"
+                        params[key] = f"'%{kw}%'"
                     query_str += " AND (" + " OR ".join(conditions) + ")"
                 print("query string ", query_str)
                 result = conn.execute(sqlalchemy.text(query_str), params).mappings().all()
@@ -271,7 +271,7 @@ class BuyerDBService(customer_db_pb2_grpc.CustomerDBServicer):
             with pool_customer.begin() as conn:
                 print("params received clear cart", request)
                 res = conn.execute(
-                    sqlalchemy.text("SELECT items FROM session_cart WHERE session_id = :sid"),
+                    sqlalchemy.text("SELECT * FROM session_cart WHERE session_id = :sid"),
                     {"sid": request.session_id}
                 ).mappings().fetchone()
 
@@ -290,7 +290,7 @@ class BuyerDBService(customer_db_pb2_grpc.CustomerDBServicer):
                 print("params received remove item", request)
                 # 1. Fetch current items in the session
                 res = conn.execute(
-                    sqlalchemy.text("SELECT items FROM session_cart WHERE session_id = :sid"),
+                    sqlalchemy.text("SELECT * FROM session_cart WHERE session_id = :sid"),
                     {"sid": request.session_id}
                 ).mappings().fetchone()
 
@@ -333,7 +333,7 @@ class BuyerDBService(customer_db_pb2_grpc.CustomerDBServicer):
                 print("params received save cart", request)
                 # 1. Get items from the active session
                 session_res = conn.execute(
-                    sqlalchemy.text("SELECT user_id, items FROM session_cart WHERE session_id = :sid"),
+                    sqlalchemy.text("SELECT * FROM session_cart WHERE session_id = :sid"),
                     {"sid": request.session_id}
                 ).mappings().fetchone()
 
@@ -364,7 +364,7 @@ class BuyerDBService(customer_db_pb2_grpc.CustomerDBServicer):
             with pool_customer.connect() as conn: # connect() is enough for SELECT
                 print("params received display cart", request)
                 res = conn.execute(
-                    sqlalchemy.text("SELECT items FROM session_cart WHERE session_id = :sid"),
+                    sqlalchemy.text("SELECT * FROM session_cart WHERE session_id = :sid"),
                     {"sid": request.session_id}
                 ).mappings().fetchone()
 
@@ -429,7 +429,7 @@ class BuyerDBService(customer_db_pb2_grpc.CustomerDBServicer):
             with pool_product.connect() as prod_conn:
                 print("params received add item cart", request)
                 product = prod_conn.execute(
-                    sqlalchemy.text("SELECT id, quantity FROM items WHERE id = :id AND quantity >= :qty"),
+                    sqlalchemy.text("SELECT * FROM items WHERE id = :id AND quantity >= :qty"),
                     {"id": request.item_id, "qty": request.item_quantity}
                 ).mappings().fetchone()
 
@@ -442,7 +442,7 @@ class BuyerDBService(customer_db_pb2_grpc.CustomerDBServicer):
             # 2. Update the session in Customer DB
             with pool_customer.begin() as cust_conn:
                 res = cust_conn.execute(
-                    sqlalchemy.text("SELECT items FROM session_cart WHERE session_id = :sid"),
+                    sqlalchemy.text("SELECT * FROM session_cart WHERE session_id = :sid"),
                     {"sid": request.session_id}
                 ).mappings().fetchone()
 
@@ -481,7 +481,7 @@ class BuyerDBService(customer_db_pb2_grpc.CustomerDBServicer):
             with pool_customer.connect() as conn:
                 print("params received make purchase", request)
                 res = conn.execute(
-                    sqlalchemy.text("SELECT user_id, items FROM session_cart WHERE session_id = :sid"),
+                    sqlalchemy.text("SELECT * FROM session_cart WHERE session_id = :sid"),
                     {"sid": request.session_id}
                 ).mappings().fetchone()
 
@@ -545,7 +545,7 @@ class BuyerDBService(customer_db_pb2_grpc.CustomerDBServicer):
                 print("params received seller rating", request)
                 # 1. Verify seller session and get seller_id
                 session_res = conn.execute(
-                    sqlalchemy.text("SELECT seller_id FROM seller_session WHERE session_id = :sid"),
+                    sqlalchemy.text("SELECT * FROM seller_session WHERE session_id = :sid"),
                     {"sid": request.session_id}
                 ).mappings().fetchone()
 
@@ -557,7 +557,7 @@ class BuyerDBService(customer_db_pb2_grpc.CustomerDBServicer):
 
                 # 2. Fetch rating from sellers table
                 seller_res = conn.execute(
-                    sqlalchemy.text("SELECT thumbs_up, thumbs_down FROM sellers WHERE id = :id"),
+                    sqlalchemy.text("SELECT * FROM sellers WHERE id = :id"),
                     {"id": session_res['seller_id']}
                 ).mappings().fetchone()
 
@@ -579,7 +579,7 @@ class BuyerDBService(customer_db_pb2_grpc.CustomerDBServicer):
             with pool_customer.connect() as cust_conn:
                 print("params received register item", request)
                 seller_res = cust_conn.execute(
-                    sqlalchemy.text("SELECT seller_id FROM seller_session WHERE session_id = :sid"),
+                    sqlalchemy.text("SELECT * FROM seller_session WHERE session_id = :sid"),
                     {"sid": request.session_id}
                 ).mappings().fetchone()
 
@@ -628,7 +628,7 @@ class BuyerDBService(customer_db_pb2_grpc.CustomerDBServicer):
 
             with pool_customer.connect() as cust_conn:
                 seller_res = cust_conn.execute(
-                    sqlalchemy.text("SELECT seller_id FROM seller_session WHERE session_id = :sid"),
+                    sqlalchemy.text("SELECT * FROM seller_session WHERE session_id = :sid"),
                     {"sid": request.session_id}
                 ).mappings().fetchone()
 
