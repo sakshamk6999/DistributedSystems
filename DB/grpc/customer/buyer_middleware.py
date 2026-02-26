@@ -85,7 +85,7 @@ async def login():
     )
 
 @app.route('/logout', methods=['POST'])
-async def login():
+async def logout():
     data = await request.get_json()
     return await handle_grpc_call(
         grpc_manager.stub.Logout,
