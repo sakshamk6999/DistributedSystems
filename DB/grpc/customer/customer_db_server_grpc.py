@@ -244,12 +244,12 @@ class BuyerDBService(customer_db_pb2_grpc.CustomerDBServicer):
                     conditions = []
                     for i, kw in enumerate(request.keywords):
                         key = f"kw{i}"
-                        conditions.append(f"keywords LIKE :{key}")
-                        params[key] = f"'%{kw}%'"
+                        conditions.append(f"keywords LIKE '%:{key}%'")
+                        params[key] = f"{kw}"
                     query_str += " AND (" + " OR ".join(conditions) + ")"
                 print("query string ", query_str)
                 result = conn.execute(sqlalchemy.text(query_str), params).mappings().all()
-                
+                print("result of query", result)
                 if not result:
                     return customer_db_pb2.ProductSearchResponse(status=customer_db_pb2.Status.ERROR)
 
@@ -367,7 +367,7 @@ class BuyerDBService(customer_db_pb2_grpc.CustomerDBServicer):
                     sqlalchemy.text("SELECT * FROM session_cart WHERE session_id = :sid"),
                     {"sid": request.session_id}
                 ).mappings().fetchone()
-
+                print("res from sql", res)
                 if not res:
                     return customer_db_pb2.DisplayCartResponse(
                         status=customer_db_pb2.Status.ERROR, 
@@ -385,7 +385,7 @@ class BuyerDBService(customer_db_pb2_grpc.CustomerDBServicer):
                             'item_id': i_id,
                             'quantity': int(i_qty)
                         })
-
+                
                 return customer_db_pb2.DisplayCartResponse(
                     status=customer_db_pb2.Status.OK, 
                     items=items_list
@@ -405,7 +405,7 @@ class BuyerDBService(customer_db_pb2_grpc.CustomerDBServicer):
                     sqlalchemy.text("SELECT * FROM items WHERE id = :id"),
                     {"id": request.item_id}
                 ).mappings().fetchone()
-
+                print("res from sql", result)
                 if not result:
                     # Return an empty response or handle as 404
                     return customer_db_pb2.GetItemResponse()
