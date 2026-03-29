@@ -13,3 +13,14 @@ CREATE TABLE IF NOT EXISTS items (
     thumbs_up INT DEFAULT 0,
     thumbs_down INT DEFAULT 0
 );
+
+CREATE TABLE IF NOT EXISTS buyer_cart (
+  user_id INT PRIMARY KEY,
+  items VARCHAR(255)
+);
+
+CREATE TABLE IF NOT EXISTS session_cart (
+  session_id INT AUTO_INCREMENT PRIMARY KEY,
+  user_id INT NOT NULL,
+  items VARCHAR(255)
+);

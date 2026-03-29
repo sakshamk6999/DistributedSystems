@@ -1,0 +1,76 @@
+syntax = "proto3";
+option java_multiple_files = true;
+option java_package = "io.grpc.examples.customerdbproto";
+option java_outer_classname = "CustomerDBProto";
+option objc_class_prefix = "CustomerDB";
+
+package customerdbproto;
+
+// General Customer DB service
+service CustomerDB {
+    // Registers the user for the service
+    rpc Register(RegisterRequest) returns (RegisterResponse) {}
+    // Logins the user for the service
+    rpc Login(LoginRequest) returns (UserResponse) {}
+    // Logout the user for the service
+    rpc Logout(LogoutRequest) returns (UserResponse) {}
+    // method to get seller rating
+    rpc GetSellerRating(GetSellerRatingRequest) returns (GetSellerRatingResponse) {}
+}
+
+enum Status {
+    OK = 0;
+    ERROR = 1;
+}
+
+enum CustomerType {
+    BUYER = 0;
+    SELLER = 1;
+}
+
+message RegisterRequest {
+    string username = 1;
+    string password = 2;
+    string name = 3;
+    CustomerType customer_type = 4;
+}
+
+message RegisterResponse {
+    Status status = 1;
+    string message = 2;
+    int32 id = 3;
+}
+
+message LoginRequest {
+    string username = 1;
+    string password = 2;
+    CustomerType customer_type = 3;
+}
+
+message LogoutRequest {
+    int32 session_id = 1;
+    CustomerType customer_type = 3;
+}
+
+message UserRequest {
+    int32 session_id = 1;
+}
+
+message UserResponse {
+    Status status = 1;
+    string message = 2;
+    int32 session_id = 3;
+}
+
+message GetSellerRatingRequest {
+    int32 session_id = 1;
+    int32 seller_id = 2;
+    CustomerType customer_type = 3;
+}
+
+message GetSellerRatingResponse {
+    Status status = 1;
+    string message = 2;
+    int32 thumbs_up = 3;
+    int32 thumbs_down = 4;
+}
